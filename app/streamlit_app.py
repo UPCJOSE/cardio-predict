@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 import joblib
+import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -27,32 +28,102 @@ AGE_LABELS = [
     "65-69",
     "70-74",
     "75-79",
-    "80 or older",
+    "80 o más",
 ]
-HEALTH_LABELS = ["Excellent", "Very good", "Good", "Fair", "Poor"]
-SMOKE_LABELS = ["Never", "Former", "Current"]
+HEALTH_LABELS = ["Excelente", "Muy buena", "Buena", "Regular", "Mala"]
+SMOKE_LABELS = ["Nunca", "Exfumador", "Actual"]
+
+FEATURE_LABELS = {
+    "AgeCategory": "Edad",
+    "Sex": "Sexo (hombre)",
+    "BMI": "IMC",
+    "GeneralHealth": "Salud percibida",
+    "PhysicalHealthDays": "Días de mala salud física",
+    "MentalHealthDays": "Días de mala salud mental",
+    "PhysicalActivities": "Actividad física",
+    "SleepHours": "Horas de sueño",
+    "SmokerStatus": "Tabaquismo",
+    "AlcoholDrinkers": "Consumo de alcohol",
+    "HadDiabetes": "Diabetes",
+    "HadStroke": "Antecedente de ACV",
+    "HadKidneyDisease": "Enfermedad renal",
+    "DifficultyWalking": "Dificultad para caminar",
+}
+
+MODEL_FILES = {
+    "Regresión logística": MODELS_DIR / "logistic.joblib",
+    "XGBoost": MODELS_DIR / "xgboost.joblib",
+}
 
 
 @st.cache_resource
 def load_artifacts():
-    model_path = MODELS_DIR / "xgboost.joblib"
-    fallback = MODELS_DIR / "logistic.joblib"
-    path = model_path if model_path.exists() else fallback
-    if not path.exists():
-        return None, None, None
-    model = joblib.load(path)
     metrics = {}
     metrics_path = REPORTS_DIR / "metrics.json"
     if metrics_path.exists():
         metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
-    # umbral de tamizaje del modelo seleccionado / xgboost
-    screen_t = 0.35
-    high_t = 0.70
-    key = "XGBoost" if "xgboost" in path.name else "Regresión logística"
-    if metrics.get("models", {}).get(key):
-        screen_t = metrics["models"][key]["at_screening_threshold"]["threshold"]
-        high_t = metrics["models"][key]["high_risk_threshold"]["threshold"]
-    return model, screen_t, high_t
+
+    models = {}
+    load_errors = {}
+    for name, path in MODEL_FILES.items():
+        if not path.exists():
+            load_errors[name] = f"No se encontró {path.name}"
+            continue
+        try:
+            models[name] = joblib.load(path)
+        except Exception as exc:  # noqa: BLE001 — un .joblib ajeno no debe tumbar la demo
+            load_errors[name] = str(exc)
+
+    selected = metrics.get("selection", {}).get("model", "Regresión logística")
+    if selected not in models:
+        selected = next(iter(models), None)
+    return models, metrics, selected, load_errors
+
+
+def thresholds_for(metrics: dict, model_name: str) -> tuple[float, float]:
+    block = metrics.get("models", {}).get(model_name, {})
+    screen_t = block.get("at_screening_threshold", {}).get("threshold", 0.47)
+    high_t = block.get("high_risk_threshold", {}).get("threshold", 0.71)
+    return float(screen_t), float(high_t)
+
+
+def local_contributions(model, X: pd.DataFrame) -> pd.DataFrame | None:
+    """Aportes locales de la logística (coeficiente × valor estandarizado)."""
+    if not hasattr(model, "named_steps"):
+        return None
+    if "scaler" not in model.named_steps or "clf" not in model.named_steps:
+        return None
+    scaler = model.named_steps["scaler"]
+    clf = model.named_steps["clf"]
+    scaled = scaler.transform(X)
+    contrib = clf.coef_[0] * scaled[0]
+    table = pd.DataFrame(
+        {
+            "Factor": [FEATURE_LABELS[c] for c in FEATURE_COLUMNS],
+            "Aporte": contrib,
+        }
+    )
+    table["Dirección"] = np.where(table["Aporte"] >= 0, "↑ riesgo", "↓ riesgo")
+    return table.sort_values("Aporte", key=np.abs, ascending=False)
+
+
+def form_to_row(values: dict) -> dict:
+    return {
+        "AgeCategory": AGE_LABELS.index(values["age"]),
+        "Sex": 1 if values["sex"] == "Hombre" else 0,
+        "BMI": float(values["bmi"]),
+        "GeneralHealth": HEALTH_LABELS.index(values["health"]),
+        "PhysicalHealthDays": int(values["phys_days"]),
+        "MentalHealthDays": int(values["ment_days"]),
+        "PhysicalActivities": 1 if values["activity"] == "Sí" else 0,
+        "SleepHours": int(values["sleep"]),
+        "SmokerStatus": SMOKE_LABELS.index(values["smoke"]),
+        "AlcoholDrinkers": 1 if values["alcohol"] == "Sí" else 0,
+        "HadDiabetes": 1 if values["diabetes"] == "Sí" else 0,
+        "HadStroke": 1 if values["stroke"] == "Sí" else 0,
+        "HadKidneyDisease": 1 if values["kidney"] == "Sí" else 0,
+        "DifficultyWalking": 1 if values["walking"] == "Sí" else 0,
+    }
 
 
 def main():
@@ -62,10 +133,38 @@ def main():
         "Herramienta educativa de apoyo. **No sustituye** valoración médica ni diagnóstico."
     )
 
-    model, t_screen, t_high = load_artifacts()
-    if model is None:
+    models, metrics, selected, load_errors = load_artifacts()
+    if not models:
         st.error("No hay modelos entrenados. Ejecute: `python scripts/run_pipeline.py`")
+        for name, err in load_errors.items():
+            st.caption(f"{name}: {err}")
         return
+    if load_errors:
+        missing = ", ".join(load_errors)
+        st.sidebar.warning(
+            f"No se pudo cargar: {missing}. La demo sigue con el modelo disponible."
+        )
+
+    reason = metrics.get("selection", {}).get("reason", "")
+    st.info(f"Modelo operativo del proyecto: **{selected}**. {reason}")
+
+    names = list(models.keys())
+    default_idx = names.index(selected) if selected in names else 0
+    model_name = st.sidebar.radio(
+        "Modelo para esta estimación",
+        names,
+        index=default_idx,
+        help="Por defecto se usa el modelo seleccionado en la evaluación (regresión logística).",
+    )
+    model = models[model_name]
+    t_screen, t_high = thresholds_for(metrics, model_name)
+
+    model_metrics = metrics.get("models", {}).get(model_name, {})
+    if model_metrics:
+        st.sidebar.metric("AUC-ROC (prueba)", f"{model_metrics['auc_roc']:.3f}")
+        st.sidebar.caption(
+            f"Umbral de tamizaje {t_screen:.2f} · umbral alto {t_high:.2f}"
+        )
 
     with st.form("risk_form"):
         c1, c2 = st.columns(2)
@@ -87,26 +186,31 @@ def main():
             walking = st.selectbox("Dificultad para caminar/escaleras", ["No", "Sí"])
         submitted = st.form_submit_button("Estimar riesgo")
 
-    if not submitted:
+    if submitted:
+        st.session_state["last_row"] = form_to_row(
+            {
+                "age": age,
+                "sex": sex,
+                "bmi": bmi,
+                "health": health,
+                "phys_days": phys_days,
+                "ment_days": ment_days,
+                "activity": activity,
+                "sleep": sleep,
+                "smoke": smoke,
+                "alcohol": alcohol,
+                "diabetes": diabetes,
+                "stroke": stroke,
+                "kidney": kidney,
+                "walking": walking,
+            }
+        )
+
+    row = st.session_state.get("last_row")
+    if row is None:
         st.info("Complete el formulario y pulse Estimar riesgo.")
         return
 
-    row = {
-        "AgeCategory": AGE_LABELS.index(age),
-        "Sex": 1 if sex == "Hombre" else 0,
-        "BMI": float(bmi),
-        "GeneralHealth": HEALTH_LABELS.index(health),
-        "PhysicalHealthDays": int(phys_days),
-        "MentalHealthDays": int(ment_days),
-        "PhysicalActivities": 1 if activity == "Sí" else 0,
-        "SleepHours": int(sleep),
-        "SmokerStatus": SMOKE_LABELS.index(smoke),
-        "AlcoholDrinkers": 1 if alcohol == "Sí" else 0,
-        "HadDiabetes": 1 if diabetes == "Sí" else 0,
-        "HadStroke": 1 if stroke == "Sí" else 0,
-        "HadKidneyDisease": 1 if kidney == "Sí" else 0,
-        "DifficultyWalking": 1 if walking == "Sí" else 0,
-    }
     X = pd.DataFrame([row], columns=FEATURE_COLUMNS)
     prob = float(model.predict_proba(X)[0, 1])
 
@@ -130,9 +234,23 @@ def main():
         )
 
     st.subheader(f"Nivel de riesgo: :{color}[{level}]")
+    st.caption(f"Estimación con **{model_name}**")
     st.metric("Probabilidad estimada", f"{prob:.1%}")
     st.write(advice)
     st.progress(min(max(prob, 0.0), 1.0))
+
+    contrib = local_contributions(model, X)
+    if contrib is not None:
+        st.markdown("**Factores que más pesan en esta persona** (regresión logística)")
+        st.dataframe(contrib.head(6), hide_index=True, width="stretch")
+    else:
+        importance_path = REPORTS_DIR / "xgboost_importance.json"
+        if importance_path.exists():
+            imp = pd.read_json(importance_path)
+            imp["Factor"] = imp["feature"].map(FEATURE_LABELS)
+            st.markdown("**Importancia global de XGBoost** (no es explicación caso a caso)")
+            st.bar_chart(imp.set_index("Factor")["importance"].head(8))
+
     st.warning(
         "Resultado orientativo con base en encuesta BRFSS (EE. UU.). "
         "No es un diagnóstico clínico."

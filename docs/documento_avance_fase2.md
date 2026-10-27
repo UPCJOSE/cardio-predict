@@ -331,7 +331,7 @@ Importancias XGBoost (ganancia relativa): AgeCategory, DifficultyWalking, Genera
 
 ### 7.7 Prototipo
 
-Interfaz Streamlit (`app/streamlit_app.py`) con las 14 preguntas, probabilidad, nivel de riesgo y aviso de no diagnóstico.
+Interfaz Streamlit (`app/streamlit_app.py`) con las 14 preguntas, probabilidad, nivel de riesgo y aviso de no diagnóstico. El prototipo carga por defecto la **regresión logística** (modelo operativo según §7.4) y muestra los factores que más aportan a la estimación de esa persona; en la barra lateral se puede comparar con XGBoost.
 
 ## 8. Conclusiones de la Fase 2
 

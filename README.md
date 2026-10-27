@@ -17,7 +17,7 @@ Estimación de riesgo cardiovascular a partir de variables de encuesta (BRFSS), 
 2. Dos modelos con justificación y ajuste de hiperparámetros (RandomizedSearchCV + CV 5-fold).  
 3. Evaluación cuantitativa (AUC-ROC/PR, sensibilidad, especificidad, F1, Brier) y comparación.  
 4. Documento técnico de avance en `docs/`.  
-5. Prototipo Streamlit para ingresar las 14 variables y obtener nivel de riesgo.
+5. Prototipo Streamlit para ingresar las 14 variables y obtener nivel de riesgo. Usa por defecto la **regresión logística** (modelo operativo); en la barra lateral se puede comparar con XGBoost.
 
 ## Estructura
 
@@ -48,15 +48,20 @@ La metodología del curso se redactó sobre BRFSS 2022; este repositorio usa el 
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+source .venv/bin/activate          # Windows PowerShell: .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
-# Pipeline completo
+# Solo hace falta si no existen models/*.joblib
 python scripts/run_pipeline.py
 
-# Prototipo
+# Prototipo (los modelos ya versionados bastan para la demo)
 streamlit run app/streamlit_app.py --server.port 8505
 ```
+
+Luego abra `http://localhost:8505`. Casos de prueba sugeridos:
+
+- **Bajo:** 18–24, mujer, IMC 22, salud excelente, no fuma, sin comorbilidades.
+- **Alto:** 80 o más, hombre, IMC 35, salud mala, fumador actual, diabetes + ACV + dificultad para caminar.
 
 ## Modelos y criterio de selección
 
