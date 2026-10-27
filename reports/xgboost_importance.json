@@ -1,0 +1,58 @@
+[
+  {
+    "feature": "AgeCategory",
+    "importance": 0.24489839375019073
+  },
+  {
+    "feature": "DifficultyWalking",
+    "importance": 0.1801203191280365
+  },
+  {
+    "feature": "GeneralHealth",
+    "importance": 0.16043011844158173
+  },
+  {
+    "feature": "HadStroke",
+    "importance": 0.10577419400215149
+  },
+  {
+    "feature": "HadDiabetes",
+    "importance": 0.10426867753267288
+  },
+  {
+    "feature": "Sex",
+    "importance": 0.08781656622886658
+  },
+  {
+    "feature": "SmokerStatus",
+    "importance": 0.04485779255628586
+  },
+  {
+    "feature": "HadKidneyDisease",
+    "importance": 0.033153288066387177
+  },
+  {
+    "feature": "PhysicalHealthDays",
+    "importance": 0.01399378664791584
+  },
+  {
+    "feature": "AlcoholDrinkers",
+    "importance": 0.007633191999047995
+  },
+  {
+    "feature": "SleepHours",
+    "importance": 0.005678809713572264
+  },
+  {
+    "feature": "BMI",
+    "importance": 0.004417845979332924
+  },
+  {
+    "feature": "MentalHealthDays",
+    "importance": 0.00405673636123538
+  },
+  {
+    "feature": "PhysicalActivities",
+    "importance": 0.0029002949595451355
+  }
+]

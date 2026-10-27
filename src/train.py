@@ -63,7 +63,6 @@ def tune_logistic(X, y, cv) -> tuple[Pipeline, dict]:
     pipe = build_logistic()
     param_dist = {
         "clf__C": np.logspace(-3, 2, 20),
-        "clf__penalty": ["l2"],
     }
     search = RandomizedSearchCV(
         pipe,

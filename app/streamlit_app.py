@@ -56,7 +56,7 @@ def load_artifacts():
 
 
 def main():
-    st.set_page_config(page_title="Riesgo cardiovascular", page_icon="❤️", layout="centered")
+    st.set_page_config(page_title="Riesgo cardiovascular", layout="centered")
     st.title("Estimación orientativa de riesgo cardiovascular")
     st.caption(
         "Herramienta educativa de apoyo. **No sustituye** valoración médica ni diagnóstico."

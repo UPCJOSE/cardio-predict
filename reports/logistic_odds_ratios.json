@@ -1,0 +1,72 @@
+[
+  {
+    "feature": "AgeCategory",
+    "coef": 0.989162896154995,
+    "odds_ratio": 2.6889825722932468
+  },
+  {
+    "feature": "GeneralHealth",
+    "coef": 0.49090646217278266,
+    "odds_ratio": 1.6337965236810934
+  },
+  {
+    "feature": "Sex",
+    "coef": 0.3501584707179659,
+    "odds_ratio": 1.4192924470659656
+  },
+  {
+    "feature": "HadStroke",
+    "coef": 0.23126267492821265,
+    "odds_ratio": 1.2601902163522758
+  },
+  {
+    "feature": "SmokerStatus",
+    "coef": 0.17932868152767467,
+    "odds_ratio": 1.1964139187042713
+  },
+  {
+    "feature": "HadDiabetes",
+    "coef": 0.15260960200471002,
+    "odds_ratio": 1.1648701271994786
+  },
+  {
+    "feature": "HadKidneyDisease",
+    "coef": 0.11710498948902401,
+    "odds_ratio": 1.1242374566107467
+  },
+  {
+    "feature": "DifficultyWalking",
+    "coef": 0.088842808972139,
+    "odds_ratio": 1.0929088473581952
+  },
+  {
+    "feature": "AlcoholDrinkers",
+    "coef": -0.07088355789796769,
+    "odds_ratio": 0.9315703598232551
+  },
+  {
+    "feature": "BMI",
+    "coef": 0.05198216887544996,
+    "odds_ratio": 1.053356959806761
+  },
+  {
+    "feature": "PhysicalHealthDays",
+    "coef": 0.04529259962195063,
+    "odds_ratio": 1.0463339720470402
+  },
+  {
+    "feature": "MentalHealthDays",
+    "coef": 0.04245296848815029,
+    "odds_ratio": 1.0433669840930395
+  },
+  {
+    "feature": "SleepHours",
+    "coef": -0.03313156646199641,
+    "odds_ratio": 0.967411272337452
+  },
+  {
+    "feature": "PhysicalActivities",
+    "coef": 0.025952510990260615,
+    "odds_ratio": 1.026292209715431
+  }
+]

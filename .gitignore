@@ -11,8 +11,6 @@ data/raw/*.zip
 data/raw/cdc/
 data/processed/*.parquet
 data/processed/*.csv
-models/*.joblib
-models/*.pkl
 .streamlit/secrets.toml
 *.egg-info/
 dist/

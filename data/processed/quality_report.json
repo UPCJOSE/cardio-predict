@@ -1,0 +1,28 @@
+{
+  "rows_raw": 319795,
+  "duplicates_removed": 32133,
+  "rows_final": 287662,
+  "positive_rate": 0.09438507693056435,
+  "bmi_clip_p01": 17.74,
+  "bmi_clip_p99": 49.23,
+  "features": [
+    "AgeCategory",
+    "Sex",
+    "BMI",
+    "GeneralHealth",
+    "PhysicalHealthDays",
+    "MentalHealthDays",
+    "PhysicalActivities",
+    "SleepHours",
+    "SmokerStatus",
+    "AlcoholDrinkers",
+    "HadDiabetes",
+    "HadStroke",
+    "HadKidneyDisease",
+    "DifficultyWalking"
+  ],
+  "train_rows": 230129,
+  "test_rows": 57533,
+  "train_positive_rate": 0.0943861920922613,
+  "test_positive_rate": 0.0943806163419255
+}

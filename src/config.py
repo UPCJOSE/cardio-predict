@@ -17,7 +17,7 @@ RAW_URL = (
 RANDOM_STATE = 42
 TEST_SIZE = 0.20
 N_CV_FOLDS = 5
-N_ITER_SEARCH = 20
+N_ITER_SEARCH = 15
 
 # Variables alineadas a la metodología del proyecto (nombres canónicos).
 FEATURE_COLUMNS = [

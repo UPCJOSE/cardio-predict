@@ -1,0 +1,32 @@
+{
+  "random_state": 42,
+  "n_cv_folds": 5,
+  "n_iter_search": 15,
+  "class_balance_train": {
+    "neg": 208408,
+    "pos": 21721
+  },
+  "logistic": {
+    "best_params": {
+      "clf__penalty": "l2",
+      "clf__C": 0.001
+    },
+    "best_cv_auc": 0.8306819006213253,
+    "train_auc": 0.830795272724267
+  },
+  "xgboost": {
+    "best_params": {
+      "subsample": 1.0,
+      "reg_lambda": 5.0,
+      "n_estimators": 300,
+      "min_child_weight": 1,
+      "max_depth": 3,
+      "learning_rate": 0.05,
+      "gamma": 0.5,
+      "colsample_bytree": 0.85
+    },
+    "best_cv_auc": 0.833574020604717,
+    "scale_pos_weight": 9.594770038211868,
+    "train_auc": 0.8361559541723015
+  }
+}

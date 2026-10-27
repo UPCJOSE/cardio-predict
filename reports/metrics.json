@@ -1,0 +1,88 @@
+{
+  "n_test": 57533,
+  "positive_rate_test": 0.0943806163419255,
+  "models": {
+    "Regresi\u00f3n log\u00edstica": {
+      "auc_roc": 0.8322791051115674,
+      "auc_roc_bootstrap_mean": 0.8322205231385967,
+      "auc_roc_ci95": [
+        0.8270716037819464,
+        0.836935529884852
+      ],
+      "auc_pr": 0.3502241213547333,
+      "brier": 0.1715908808182278,
+      "at_0_5": {
+        "threshold": 0.5,
+        "accuracy": 0.7393669719986791,
+        "precision": 0.233965622740168,
+        "recall_sensitivity": 0.7745856353591161,
+        "specificity": 0.7356966009634762,
+        "f1": 0.3593796727474687,
+        "tn": 38332,
+        "fp": 13771,
+        "fn": 1224,
+        "tp": 4206
+      },
+      "at_screening_threshold": {
+        "threshold": 0.47000000000000003,
+        "accuracy": 0.717136252237846,
+        "precision": 0.22288664008995196,
+        "recall_sensitivity": 0.8031307550644567,
+        "specificity": 0.7081741934245629,
+        "f1": 0.3489358297327572,
+        "tn": 36898,
+        "fp": 15205,
+        "fn": 1069,
+        "tp": 4361
+      },
+      "high_risk_threshold": {
+        "threshold": 0.7100000000000001,
+        "sensitivity": 0.47808471454880297,
+        "specificity": 0.9014452142870852
+      }
+    },
+    "XGBoost": {
+      "auc_roc": 0.8355265825105103,
+      "auc_roc_bootstrap_mean": 0.8355390034622632,
+      "auc_roc_ci95": [
+        0.8306101053490865,
+        0.8402368898760703
+      ],
+      "auc_pr": 0.3556880814340195,
+      "brier": 0.1723705679178238,
+      "at_0_5": {
+        "threshold": 0.5,
+        "accuracy": 0.7245059357238455,
+        "precision": 0.2272822445561139,
+        "recall_sensitivity": 0.7996316758747698,
+        "specificity": 0.7166765829222885,
+        "f1": 0.35395777288660635,
+        "tn": 37341,
+        "fp": 14762,
+        "fn": 1088,
+        "tp": 4342
+      },
+      "at_screening_threshold": {
+        "threshold": 0.49,
+        "accuracy": 0.7189612917803695,
+        "precision": 0.22510623048174883,
+        "recall_sensitivity": 0.8097605893186004,
+        "specificity": 0.7094984933689039,
+        "f1": 0.3522813764371269,
+        "tn": 36967,
+        "fp": 15136,
+        "fn": 1033,
+        "tp": 4397
+      },
+      "high_risk_threshold": {
+        "threshold": 0.73,
+        "sensitivity": 0.47753222836095766,
+        "specificity": 0.9044584764792815
+      }
+    }
+  },
+  "selection": {
+    "model": "Regresi\u00f3n log\u00edstica",
+    "reason": "Diferencia de AUC-ROC < 0.01; se prefiere la log\u00edstica por interpretabilidad."
+  }
+}
