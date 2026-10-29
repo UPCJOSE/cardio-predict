@@ -1,4 +1,7 @@
-"""Evaluación cuantitativa y comparación de modelos."""
+"""Evaluación en el conjunto de prueba y comparación logística vs XGBoost.
+
+Escribe reports/metrics.json, comparison_table.md y las figuras ROC/PR.
+"""
 from __future__ import annotations
 
 import json
@@ -34,6 +37,7 @@ from src.config import (
 
 
 def load_test():
+    """Carga el 20 % de prueba (no se usó para tunear hiperparámetros)."""
     test = pd.read_parquet(DATA_PROCESSED / "test.parquet")
     y = test[TARGET_COLUMN]
     X = test.drop(columns=[TARGET_COLUMN])
@@ -41,6 +45,7 @@ def load_test():
 
 
 def bootstrap_auc(y_true, y_prob, n_boot: int = 200, seed: int = RANDOM_STATE):
+    """AUC-ROC medio e intervalo al 95 % remuestreando el test 200 veces."""
     rng = np.random.default_rng(seed)
     y_true = np.asarray(y_true)
     y_prob = np.asarray(y_prob)
@@ -56,6 +61,7 @@ def bootstrap_auc(y_true, y_prob, n_boot: int = 200, seed: int = RANDOM_STATE):
 
 
 def best_threshold_for_sensitivity(y_true, y_prob, min_sens: float = MIN_SENSITIVITY):
+    """Umbral de tamizaje: sensibilidad ≥ 0,80 y, entre esos, el de mayor F1."""
     precisions, recalls, thresholds = precision_recall_curve(y_true, y_prob)
     # precision_recall_curve thresholds has len = len(recalls)-1
     best = None
@@ -84,6 +90,7 @@ def best_threshold_for_sensitivity(y_true, y_prob, min_sens: float = MIN_SENSITI
 
 
 def high_risk_threshold(y_true, y_prob, min_spec: float = MIN_HIGH_SPECIFICITY):
+    """Umbral alto: especificidad ≥ 0,90 y, entre esos, el de mayor sensibilidad."""
     best = None
     for t in np.linspace(0.01, 0.99, 99):
         pred = (y_prob >= t).astype(int)
@@ -97,6 +104,7 @@ def high_risk_threshold(y_true, y_prob, min_spec: float = MIN_HIGH_SPECIFICITY):
 
 
 def metrics_at_threshold(y_true, y_prob, threshold: float) -> dict:
+    """Exactitud, precisión, sensibilidad, especificidad, F1 y matriz de confusión."""
     pred = (y_prob >= threshold).astype(int)
     tn, fp, fn, tp = confusion_matrix(y_true, pred).ravel()
     return {
@@ -114,6 +122,7 @@ def metrics_at_threshold(y_true, y_prob, threshold: float) -> dict:
 
 
 def plot_roc(curves: dict, path: Path):
+    """Guarda la curva ROC de ambos modelos."""
     plt.figure(figsize=(7, 5))
     for name, (fpr, tpr, auc) in curves.items():
         plt.plot(fpr, tpr, label=f"{name} (AUC={auc:.3f})")
@@ -128,6 +137,7 @@ def plot_roc(curves: dict, path: Path):
 
 
 def plot_pr(curves: dict, path: Path):
+    """Guarda la curva precisión-sensibilidad (útil con clases desbalanceadas)."""
     plt.figure(figsize=(7, 5))
     for name, (rec, prec, ap) in curves.items():
         plt.plot(rec, prec, label=f"{name} (AP={ap:.3f})")
@@ -141,6 +151,7 @@ def plot_pr(curves: dict, path: Path):
 
 
 def plot_comparison_bars(results: dict, path: Path):
+    """Barras lado a lado de AUC, F1, sensibilidad y especificidad."""
     models = list(results.keys())
     metrics = ["auc_roc", "auc_pr", "f1", "recall_sensitivity", "specificity"]
     labels = ["AUC-ROC", "AUC-PR", "F1", "Sensibilidad", "Especificidad"]
@@ -168,6 +179,7 @@ def plot_comparison_bars(results: dict, path: Path):
 
 
 def run() -> dict:
+    """Evalúa los .joblib, elige modelo (Δ AUC < 0,01 → logística) y escribe reportes."""
     X, y = load_test()
     log_model = joblib.load(MODELS_DIR / "logistic.joblib")
     xgb_model = joblib.load(MODELS_DIR / "xgboost.joblib")

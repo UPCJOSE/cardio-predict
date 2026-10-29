@@ -1,4 +1,8 @@
-"""Prototipo de orientación preventiva (no diagnóstico médico)."""
+"""Prototipo Streamlit: 14 preguntas → probabilidad y nivel de riesgo.
+
+Carga models/*.joblib (no reentrena). Por defecto usa la logística, que fue
+el modelo operativo según reports/metrics.json.
+"""
 from __future__ import annotations
 
 import json
@@ -58,6 +62,7 @@ MODEL_FILES = {
 
 @st.cache_resource
 def load_artifacts():
+    """Carga .joblib + metrics.json una sola vez (caché de Streamlit)."""
     metrics = {}
     metrics_path = REPORTS_DIR / "metrics.json"
     if metrics_path.exists():
@@ -81,6 +86,7 @@ def load_artifacts():
 
 
 def thresholds_for(metrics: dict, model_name: str) -> tuple[float, float]:
+    """Devuelve (umbral tamizaje, umbral alto) del modelo elegido."""
     block = metrics.get("models", {}).get(model_name, {})
     screen_t = block.get("at_screening_threshold", {}).get("threshold", 0.47)
     high_t = block.get("high_risk_threshold", {}).get("threshold", 0.71)
@@ -88,7 +94,10 @@ def thresholds_for(metrics: dict, model_name: str) -> tuple[float, float]:
 
 
 def local_contributions(model, X: pd.DataFrame) -> pd.DataFrame | None:
-    """Aportes locales de la logística (coeficiente × valor estandarizado)."""
+    """Aporte de cada variable en esta persona (coeficiente × valor estandarizado).
+
+    Solo aplica a la logística (tiene scaler + clf). XGBoost no usa este cálculo.
+    """
     if not hasattr(model, "named_steps"):
         return None
     if "scaler" not in model.named_steps or "clf" not in model.named_steps:
@@ -108,6 +117,7 @@ def local_contributions(model, X: pd.DataFrame) -> pd.DataFrame | None:
 
 
 def form_to_row(values: dict) -> dict:
+    """Pasa las respuestas del formulario a los 14 números que espera el modelo."""
     return {
         "AgeCategory": AGE_LABELS.index(values["age"]),
         "Sex": 1 if values["sex"] == "Hombre" else 0,
@@ -127,6 +137,7 @@ def form_to_row(values: dict) -> dict:
 
 
 def main():
+    """Pantalla: formulario → predict_proba → Bajo / Moderado / Alto."""
     st.set_page_config(page_title="Riesgo cardiovascular", layout="centered")
     st.title("Estimación orientativa de riesgo cardiovascular")
     st.caption(

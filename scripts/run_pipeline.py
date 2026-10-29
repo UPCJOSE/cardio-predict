@@ -10,6 +10,7 @@ sys.path.insert(0, str(ROOT))
 
 
 def main() -> None:
+    """Un solo comando: descarga → limpia → entrena → evalúa."""
     runpy.run_path(str(ROOT / "scripts" / "download_data.py"), run_name="__main__")
     from src.data_prep import run as prep
     from src.evaluate import run as evaluate

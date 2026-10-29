@@ -12,6 +12,7 @@ from src.config import DATA_RAW, RAW_CSV, RAW_URL  # noqa: E402
 
 
 def main() -> None:
+    """Descarga heart_2020_cleaned.csv si aún no está (o si pesa menos de 1 MB)."""
     DATA_RAW.mkdir(parents=True, exist_ok=True)
     if RAW_CSV.exists() and RAW_CSV.stat().st_size > 1_000_000:
         print(f"Ya existe: {RAW_CSV} ({RAW_CSV.stat().st_size / 1e6:.1f} MB)")

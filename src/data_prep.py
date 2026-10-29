@@ -1,4 +1,8 @@
-"""Limpieza, transformación, ingeniería de características y partición."""
+"""Limpieza, transformación, ingeniería de características y partición.
+
+Convierte el CSV BRFSS (texto Yes/No, rangos de edad, etc.) al esquema numérico
+de 14 predictores + HeartDisease, y escribe train.parquet / test.parquet.
+"""
 from __future__ import annotations
 
 import json
@@ -20,6 +24,7 @@ from src.config import (
 
 
 def load_raw(path: Path = RAW_CSV) -> pd.DataFrame:
+    """Lee el CSV crudo. Si no está, hay que correr scripts/download_data.py."""
     if not path.exists():
         raise FileNotFoundError(
             f"No se encontró {path}. Ejecute: python scripts/download_data.py"
@@ -28,13 +33,18 @@ def load_raw(path: Path = RAW_CSV) -> pd.DataFrame:
 
 
 def _map_smoking(value: str) -> str:
+    """El CSV cleaned 2020 solo trae Yes/No; no existe categoría 'exfumador'."""
     if value == "Yes":
         return "Current"
     return "Never"
 
 
-def clean_and_engineer(df: pd.DataFrame) -> pd.DataFrame:
-    """Normaliza columnas del CSV público BRFSS cleaned a esquema del proyecto."""
+def clean_and_engineer(df: pd.DataFrame):
+    """Pasa el CSV público a columnas canónicas, quita duplicados y recorta IMC.
+
+    Returns:
+        (tabla limpia, dict de calidad para quality_report.json)
+    """
     out = pd.DataFrame(index=df.index)
 
     out["HeartDisease"] = (df["HeartDisease"] == "Yes").astype(int)
@@ -87,6 +97,7 @@ def clean_and_engineer(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def split_data(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+    """80/20 estratificado por HeartDisease (misma proporción de positivos en ambos)."""
     X = df[FEATURE_COLUMNS]
     y = df[TARGET_COLUMN]
     return train_test_split(
@@ -105,6 +116,7 @@ def save_processed(
     y_test: pd.Series,
     quality: dict,
 ) -> None:
+    """Guarda train/test en parquet y el informe de calidad en JSON."""
     DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
     train = X_train.copy()
     train[TARGET_COLUMN] = y_train.values
@@ -118,6 +130,7 @@ def save_processed(
 
 
 def run() -> dict:
+    """Pipeline completo de datos. Devuelve el dict de calidad (también lo imprime)."""
     raw = load_raw()
     cleaned, quality = clean_and_engineer(raw)
     X_train, X_test, y_train, y_test = split_data(cleaned)

@@ -1,4 +1,8 @@
-"""Configuración central del experimento."""
+"""Constantes del experimento: rutas, semilla, variables y umbrales.
+
+Cualquier script debe importar de aquí para no duplicar nombres de columnas
+ni cambiar a medias la partición train/test.
+"""
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -8,18 +12,19 @@ MODELS_DIR = ROOT / "models"
 REPORTS_DIR = ROOT / "reports"
 FIGURES_DIR = REPORTS_DIR / "figures"
 
+# CSV público BRFSS cleaned (espejo sin login de Kaggle).
 RAW_CSV = DATA_RAW / "heart_2020_cleaned.csv"
 RAW_URL = (
     "https://gist.githubusercontent.com/colemilne54/"
     "4701ba22d76b0457bcc8852d7d315772/raw/heart_2020_cleaned.csv"
 )
 
-RANDOM_STATE = 42
-TEST_SIZE = 0.20
-N_CV_FOLDS = 5
-N_ITER_SEARCH = 15
+RANDOM_STATE = 42  # reproduce la misma partición y el mismo RandomizedSearchCV
+TEST_SIZE = 0.20  # 20 % prueba; el 80 % restante es entrenamiento
+N_CV_FOLDS = 5  # pliegues estratificados para tunear hiperparámetros
+N_ITER_SEARCH = 15  # intentos de RandomizedSearchCV
 
-# Variables alineadas a la metodología del proyecto (nombres canónicos).
+# 14 predictores de la metodología (nombres canónicos tras el mapeo del CSV).
 FEATURE_COLUMNS = [
     "AgeCategory",
     "Sex",
@@ -37,8 +42,9 @@ FEATURE_COLUMNS = [
     "DifficultyWalking",
 ]
 
-TARGET_COLUMN = "HeartDisease"
+TARGET_COLUMN = "HeartDisease"  # 1 = autoreporte de enfermedad cardíaca
 
+# Texto del CSV → número que sí aceptan los modelos.
 ORDINAL_MAPS = {
     "AgeCategory": {
         "18-24": 0,
@@ -69,6 +75,6 @@ ORDINAL_MAPS = {
     },
 }
 
-# Umbrales clínicos de la metodología.
-MIN_SENSITIVITY = 0.80
-MIN_HIGH_SPECIFICITY = 0.90
+# Metas para traducir probabilidad → nivel de riesgo (bajo / moderado / alto).
+MIN_SENSITIVITY = 0.80  # umbral de tamizaje: no dejar pasar casos de riesgo
+MIN_HIGH_SPECIFICITY = 0.90  # umbral alto: pocos falsos positivos

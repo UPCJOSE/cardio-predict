@@ -1,4 +1,8 @@
-"""Entrenamiento: baseline (regresión logística) + XGBoost con ajuste de hiperparámetros."""
+"""Entrenamiento: baseline (regresión logística) + XGBoost.
+
+Ajusta hiperparámetros con RandomizedSearchCV y CV estratificada de 5 pliegues.
+Guarda models/logistic.joblib, models/xgboost.joblib y models/experiment.json.
+"""
 from __future__ import annotations
 
 import json
@@ -25,6 +29,7 @@ from src.config import (
 
 
 def load_train() -> tuple[pd.DataFrame, pd.Series]:
+    """Carga el parquet de entrenamiento y separa X (14 variables) e y (HeartDisease)."""
     train = pd.read_parquet(DATA_PROCESSED / "train.parquet")
     y = train[TARGET_COLUMN]
     X = train.drop(columns=[TARGET_COLUMN])
@@ -32,6 +37,7 @@ def load_train() -> tuple[pd.DataFrame, pd.Series]:
 
 
 def build_logistic() -> Pipeline:
+    """Logística con datos estandarizados y pesos de clase (desbalance ~9:1)."""
     return Pipeline(
         steps=[
             ("scaler", StandardScaler()),
@@ -49,6 +55,7 @@ def build_logistic() -> Pipeline:
 
 
 def build_xgboost(scale_pos_weight: float) -> XGBClassifier:
+    """XGBoost binario. scale_pos_weight ≈ n_neg/n_pos para el desbalance."""
     return XGBClassifier(
         objective="binary:logistic",
         eval_metric="auc",
@@ -60,6 +67,7 @@ def build_xgboost(scale_pos_weight: float) -> XGBClassifier:
 
 
 def tune_logistic(X, y, cv) -> tuple[Pipeline, dict]:
+    """Busca el mejor C (regularización) maximizando AUC-ROC en validación cruzada."""
     pipe = build_logistic()
     param_dist = {
         "clf__C": np.logspace(-3, 2, 20),
@@ -83,6 +91,7 @@ def tune_logistic(X, y, cv) -> tuple[Pipeline, dict]:
 
 
 def tune_xgboost(X, y, cv, scale_pos_weight: float) -> tuple[XGBClassifier, dict]:
+    """Prueba 15 combinaciones aleatorias de profundidad, lr, árboles, etc."""
     model = build_xgboost(scale_pos_weight)
     param_dist = {
         "n_estimators": [100, 200, 300, 400],
@@ -114,12 +123,14 @@ def tune_xgboost(X, y, cv, scale_pos_weight: float) -> tuple[XGBClassifier, dict
 
 
 def _jsonable(v):
+    """Convierte numpy.int64/float64 a tipos nativos para poder guardar JSON."""
     if isinstance(v, (np.floating, np.integer)):
         return v.item()
     return v
 
 
 def run() -> dict:
+    """Entrena ambos modelos, los serializa y anota hiperparámetros y AUC de train."""
     X, y = load_train()
     neg, pos = int((y == 0).sum()), int((y == 1).sum())
     scale_pos_weight = neg / max(pos, 1)
