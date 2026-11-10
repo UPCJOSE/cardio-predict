@@ -59,6 +59,344 @@ MODEL_FILES = {
     "XGBoost": MODELS_DIR / "xgboost.joblib",
 }
 
+# Casos de demo para proyección en vivo (README).
+PRESET_LOW = {
+    "age": "18-24",
+    "sex": "Mujer",
+    "bmi": 22.0,
+    "health": "Excelente",
+    "phys_days": 0,
+    "ment_days": 0,
+    "activity": "Sí",
+    "sleep": 8,
+    "smoke": "Nunca",
+    "alcohol": "No",
+    "diabetes": "No",
+    "stroke": "No",
+    "kidney": "No",
+    "walking": "No",
+}
+PRESET_HIGH = {
+    "age": "80 o más",
+    "sex": "Hombre",
+    "bmi": 35.0,
+    "health": "Mala",
+    "phys_days": 20,
+    "ment_days": 10,
+    "activity": "No",
+    "sleep": 5,
+    "smoke": "Actual",
+    "alcohol": "Sí",
+    "diabetes": "Sí",
+    "stroke": "Sí",
+    "kidney": "No",
+    "walking": "Sí",
+}
+PRESET_DEFAULT = {
+    "age": "55-59",
+    "sex": "Mujer",
+    "bmi": 27.0,
+    "health": "Buena",
+    "phys_days": 0,
+    "ment_days": 2,
+    "activity": "Sí",
+    "sleep": 7,
+    "smoke": "Nunca",
+    "alcohol": "No",
+    "diabetes": "No",
+    "stroke": "No",
+    "kidney": "No",
+    "walking": "No",
+}
+
+THEME_OPTIONS = ("Claro", "Oscuro", "Sistema")
+
+CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap');
+
+html, body, [class*="css"] {
+  font-family: "DM Sans", sans-serif;
+}
+
+.stApp,
+.stApp:has(.theme-light),
+.stApp:has(.theme-system) {
+  --cp-bg-1: rgba(19, 111, 99, 0.14);
+  --cp-bg-2: rgba(70, 120, 170, 0.13);
+  --cp-bg-3: #d7f0ea;
+  --cp-bg-4: #d9e8f7;
+  --cp-bg-base-a: #f4f8fb;
+  --cp-bg-base-b: #eef3f7;
+  --cp-panel: rgba(255,255,255,0.86);
+  --cp-panel-border: rgba(15, 55, 70, 0.08);
+  --cp-form: rgba(255,255,255,0.72);
+  --cp-text: #0b3d4a;
+  --cp-muted: #5b6b75;
+  --cp-risk-text: #08323c;
+  --cp-bajo-a: #e7f8ef;
+  --cp-bajo-b: #d7f1e4;
+  --cp-bajo-border: #9fd8b8;
+  --cp-mod-a: #fff6e8;
+  --cp-mod-b: #ffe8c7;
+  --cp-mod-border: #f0c27a;
+  --cp-alto-a: #fdecec;
+  --cp-alto-b: #f8d0d0;
+  --cp-alto-border: #e39a9a;
+  --cp-menu-btn: #0b3d4a;
+  --cp-menu-btn-hover: #136f63;
+  --cp-menu-btn-text: #f7fcfb;
+  --cp-secondary-bg: rgba(255,255,255,0.78);
+  --cp-secondary-text: #0b3d4a;
+  --cp-secondary-border: rgba(15, 55, 70, 0.12);
+}
+
+.stApp:has(.theme-dark) {
+  --cp-bg-1: rgba(45, 180, 160, 0.12);
+  --cp-bg-2: rgba(90, 140, 200, 0.12);
+  --cp-bg-3: #16353c;
+  --cp-bg-4: #1a2f45;
+  --cp-bg-base-a: #0d171c;
+  --cp-bg-base-b: #101c24;
+  --cp-panel: rgba(18, 32, 40, 0.92);
+  --cp-panel-border: rgba(180, 210, 220, 0.12);
+  --cp-form: rgba(16, 28, 35, 0.88);
+  --cp-text: #d7e8ea;
+  --cp-muted: #9bb0b8;
+  --cp-risk-text: #e8f3f2;
+  --cp-bajo-a: #14352c;
+  --cp-bajo-b: #1a4638;
+  --cp-bajo-border: #3f8f6e;
+  --cp-mod-a: #3a2e16;
+  --cp-mod-b: #4a3918;
+  --cp-mod-border: #c49a4a;
+  --cp-alto-a: #3a1c1c;
+  --cp-alto-b: #4a2424;
+  --cp-alto-border: #c77777;
+  --cp-menu-btn: #1a8a7a;
+  --cp-menu-btn-hover: #23a090;
+  --cp-menu-btn-text: #f7fcfb;
+  --cp-secondary-bg: rgba(255,255,255,0.06);
+  --cp-secondary-text: #d7e8ea;
+  --cp-secondary-border: rgba(180, 210, 220, 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  .stApp:has(.theme-system) {
+    --cp-bg-1: rgba(45, 180, 160, 0.12);
+    --cp-bg-2: rgba(90, 140, 200, 0.12);
+    --cp-bg-3: #16353c;
+    --cp-bg-4: #1a2f45;
+    --cp-bg-base-a: #0d171c;
+    --cp-bg-base-b: #101c24;
+    --cp-panel: rgba(18, 32, 40, 0.92);
+    --cp-panel-border: rgba(180, 210, 220, 0.12);
+    --cp-form: rgba(16, 28, 35, 0.88);
+    --cp-text: #d7e8ea;
+    --cp-muted: #9bb0b8;
+    --cp-risk-text: #e8f3f2;
+    --cp-bajo-a: #14352c;
+    --cp-bajo-b: #1a4638;
+    --cp-bajo-border: #3f8f6e;
+    --cp-mod-a: #3a2e16;
+    --cp-mod-b: #4a3918;
+    --cp-mod-border: #c49a4a;
+    --cp-alto-a: #3a1c1c;
+    --cp-alto-b: #4a2424;
+    --cp-alto-border: #c77777;
+    --cp-menu-btn: #1a8a7a;
+    --cp-menu-btn-hover: #23a090;
+    --cp-menu-btn-text: #f7fcfb;
+    --cp-secondary-bg: rgba(255,255,255,0.06);
+    --cp-secondary-text: #d7e8ea;
+    --cp-secondary-border: rgba(180, 210, 220, 0.18);
+  }
+}
+
+.stApp {
+  background:
+    radial-gradient(900px 900px at -8% 18%, var(--cp-bg-1) 0%, transparent 58%),
+    radial-gradient(850px 820px at 108% 22%, var(--cp-bg-2) 0%, transparent 56%),
+    radial-gradient(1100px 480px at 12% -12%, var(--cp-bg-3) 0%, transparent 58%),
+    radial-gradient(980px 460px at 96% -8%, var(--cp-bg-4) 0%, transparent 52%),
+    linear-gradient(180deg, var(--cp-bg-base-a) 0%, var(--cp-bg-base-b) 100%);
+  color: var(--cp-text);
+}
+
+.block-container {
+  padding-top: 1.2rem;
+  padding-bottom: 3rem;
+  max-width: 1340px;
+}
+
+.hero {
+  background: linear-gradient(135deg, #0b3d4a 0%, #136f63 55%, #1a8a7a 100%);
+  color: #f7fcfb;
+  border-radius: 22px;
+  padding: 1.6rem 1.8rem 1.4rem;
+  margin-bottom: 0.35rem;
+  box-shadow: 0 18px 40px rgba(11, 61, 74, 0.22);
+}
+.hero h1 {
+  font-family: "Fraunces", serif;
+  font-size: 2.05rem;
+  line-height: 1.15;
+  margin: 0 0 0.45rem 0;
+  font-weight: 700;
+}
+.hero p {
+  margin: 0;
+  font-size: 1.02rem;
+  opacity: 0.92;
+  max-width: 46rem;
+}
+.hero-note {
+  margin-top: 0.85rem;
+  font-size: 0.88rem;
+  opacity: 0.88;
+}
+
+.hero-row {
+  margin-bottom: 1.2rem;
+}
+
+.panel {
+  background: var(--cp-panel);
+  border: 1px solid var(--cp-panel-border);
+  border-radius: 18px;
+  padding: 1.1rem 1.2rem 0.9rem;
+  box-shadow: 0 10px 28px rgba(20, 40, 60, 0.06);
+  margin-bottom: 1rem;
+}
+.panel h3 {
+  font-family: "Fraunces", serif;
+  margin: 0 0 0.35rem 0;
+  color: var(--cp-text);
+  font-size: 1.25rem;
+}
+.panel .muted {
+  color: var(--cp-muted);
+  font-size: 0.92rem;
+  margin-bottom: 0.8rem;
+}
+
+.risk-card {
+  border-radius: 20px;
+  padding: 1.35rem 1.4rem 1.2rem;
+  color: var(--cp-risk-text);
+  margin: 0.4rem 0 1rem 0;
+  border: 1px solid transparent;
+}
+.risk-card.bajo {
+  background: linear-gradient(135deg, var(--cp-bajo-a), var(--cp-bajo-b));
+  border-color: var(--cp-bajo-border);
+}
+.risk-card.moderado {
+  background: linear-gradient(135deg, var(--cp-mod-a), var(--cp-mod-b));
+  border-color: var(--cp-mod-border);
+}
+.risk-card.alto {
+  background: linear-gradient(135deg, var(--cp-alto-a), var(--cp-alto-b));
+  border-color: var(--cp-alto-border);
+}
+.risk-label {
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  margin-bottom: 0.25rem;
+}
+.risk-level {
+  font-family: "Fraunces", serif;
+  font-size: 2.4rem;
+  line-height: 1;
+  margin: 0 0 0.35rem 0;
+}
+.risk-prob {
+  font-size: 1.55rem;
+  font-weight: 700;
+  margin: 0.15rem 0 0.55rem 0;
+}
+.risk-advice {
+  font-size: 1.02rem;
+  margin: 0;
+}
+
+.section-title {
+  font-family: "Fraunces", serif;
+  color: var(--cp-text);
+  font-size: 1.05rem;
+  margin: 0.2rem 0 0.55rem 0;
+}
+
+div[data-testid="stForm"] {
+  background: var(--cp-form);
+  border: 1px solid var(--cp-panel-border);
+  border-radius: 18px;
+  padding: 0.85rem 1rem 0.4rem;
+}
+
+.stButton > button[kind="primary"],
+div[data-testid="stFormSubmitButton"] button {
+  background: #136f63 !important;
+  border: none !important;
+  color: white !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  padding: 0.55rem 1rem !important;
+}
+.stButton > button {
+  border-radius: 12px !important;
+}
+.stButton > button[kind="secondary"] {
+  background: var(--cp-secondary-bg) !important;
+  color: var(--cp-secondary-text) !important;
+  border: 1px solid var(--cp-secondary-border) !important;
+}
+
+div[data-testid="stPopover"] > button {
+  background: var(--cp-menu-btn) !important;
+  color: var(--cp-menu-btn-text) !important;
+  border: none !important;
+  border-radius: 14px !important;
+  font-weight: 700 !important;
+  font-size: 1.15rem !important;
+  letter-spacing: 0.02em;
+  min-height: 3rem;
+  padding: 0.65rem 0.85rem !important;
+  box-shadow: 0 10px 22px rgba(11, 61, 74, 0.18);
+}
+div[data-testid="stPopover"] > button:hover {
+  background: var(--cp-menu-btn-hover) !important;
+  color: #ffffff !important;
+}
+
+.stApp:has(.theme-dark) [data-testid="stMarkdownContainer"],
+.stApp:has(.theme-dark) label,
+.stApp:has(.theme-dark) p,
+.stApp:has(.theme-dark) span {
+  color: var(--cp-text);
+}
+@media (prefers-color-scheme: dark) {
+  .stApp:has(.theme-system) [data-testid="stMarkdownContainer"],
+  .stApp:has(.theme-system) label,
+  .stApp:has(.theme-system) p,
+  .stApp:has(.theme-system) span {
+    color: var(--cp-text);
+  }
+}
+
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header[data-testid="stHeader"] {display: none !important;}
+section[data-testid="stSidebar"] {display: none !important;}
+[data-testid="collapsedControl"] {display: none !important;}
+[data-testid="stDecoration"] {display: none;}
+[data-testid="stStatusWidget"] {display: none;}
+.stAppDeployButton, .stDeployButton {display: none !important;}
+</style>
+"""
+
 
 @st.cache_resource
 def load_artifacts():
@@ -136,13 +474,133 @@ def form_to_row(values: dict) -> dict:
     }
 
 
+def init_form_state() -> None:
+    """Inicializa keys del formulario una sola vez."""
+    for key, value in PRESET_DEFAULT.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+    if "theme_mode" not in st.session_state:
+        st.session_state["theme_mode"] = "Claro"
+
+
+def apply_preset(preset: dict, preset_name: str) -> None:
+    """Carga un caso de demo y calcula el resultado al instante."""
+    for key, value in preset.items():
+        st.session_state[key] = value
+    st.session_state["last_row"] = form_to_row(preset)
+    st.session_state["active_preset"] = preset_name
+
+
+def theme_class(theme_mode: str) -> str:
+    """Clase CSS según el modo elegido (Claro / Oscuro / Sistema)."""
+    mapping = {"Claro": "theme-light", "Oscuro": "theme-dark", "Sistema": "theme-system"}
+    return mapping.get(theme_mode, "theme-light")
+
+
+def apply_theme(theme_mode: str) -> None:
+    """Inyecta CSS base + marcador de tema para variables y modo sistema."""
+    st.markdown(CSS, unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="{theme_class(theme_mode)}" style="display:none"></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_hero_with_menu(
+    names: list[str],
+    default_idx: int,
+    metrics: dict,
+    selected: str,
+    reason: str,
+) -> tuple[str, float, float]:
+    """☰ a la izquierda del hero + controles de modelo y tema."""
+    try:
+        menu_col, hero_col = st.columns(
+            [0.09, 0.91], gap="small", vertical_alignment="top"
+        )
+    except TypeError:
+        menu_col, hero_col = st.columns([0.09, 0.91], gap="small")
+    with menu_col:
+        with st.popover("☰", use_container_width=True):
+            st.markdown("**Presentación**")
+            st.caption("Controles técnicos para la demo en vivo.")
+            st.radio(
+                "Apariencia",
+                THEME_OPTIONS,
+                key="theme_mode",
+                horizontal=True,
+                help="Claro, Oscuro o según el sistema (como en Deploy).",
+            )
+            st.markdown("**Modelo para esta estimación**")
+            model_name = st.radio(
+                "Modelo",
+                names,
+                index=default_idx,
+                label_visibility="collapsed",
+                help="Por defecto se usa el modelo seleccionado en la evaluación.",
+            )
+            t_screen, t_high = thresholds_for(metrics, model_name)
+            model_metrics = metrics.get("models", {}).get(model_name, {})
+            if model_metrics:
+                st.metric("AUC-ROC (prueba)", f"{model_metrics['auc_roc']:.3f}")
+                st.caption(
+                    f"Umbral de tamizaje {t_screen:.2f} · umbral alto {t_high:.2f}"
+                )
+            with st.expander("¿Por qué este modelo?", expanded=False):
+                st.write(f"**Operativo del proyecto:** {selected}")
+                if reason:
+                    st.write(reason)
+                st.caption(
+                    "Partición actual del experimento: 70 % train / 15 % val / 15 % test."
+                )
+    with hero_col:
+        st.markdown(
+            """
+<div class="hero">
+  <h1>Cardio Predict</h1>
+  <p>
+    Estimación orientativa de riesgo cardiovascular a partir de 14 variables de encuesta,
+    comparando regresión logística y XGBoost.
+  </p>
+  <div class="hero-note">
+    Herramienta educativa de apoyo. No sustituye valoración médica ni diagnóstico.
+  </div>
+</div>
+            """,
+            unsafe_allow_html=True,
+        )
+    return model_name, t_screen, t_high
+
+
+def render_result(level: str, prob: float, advice: str, model_name: str) -> None:
+    css_level = level.lower()
+    st.markdown(
+        f"""
+<div class="risk-card {css_level}">
+  <div class="risk-label">Nivel de riesgo estimado</div>
+  <div class="risk-level">{level}</div>
+  <div class="risk-prob">{prob:.1%} de probabilidad</div>
+  <p class="risk-advice">{advice}</p>
+  <p class="risk-advice" style="opacity:0.75;margin-top:0.55rem;font-size:0.92rem;">
+    Modelo usado: {model_name}
+  </p>
+</div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.progress(min(max(prob, 0.0), 1.0))
+
+
 def main():
     """Pantalla: formulario → predict_proba → Bajo / Moderado / Alto."""
-    st.set_page_config(page_title="Riesgo cardiovascular", layout="centered")
-    st.title("Estimación orientativa de riesgo cardiovascular")
-    st.caption(
-        "Herramienta educativa de apoyo. **No sustituye** valoración médica ni diagnóstico."
+    st.set_page_config(
+        page_title="Cardio Predict · UPC",
+        page_icon="❤",
+        layout="wide",
+        initial_sidebar_state="collapsed",
     )
+    init_form_state()
+    apply_theme(st.session_state["theme_mode"])
 
     models, metrics, selected, load_errors = load_artifacts()
     if not models:
@@ -152,120 +610,163 @@ def main():
         return
     if load_errors:
         missing = ", ".join(load_errors)
-        st.sidebar.warning(
+        st.warning(
             f"No se pudo cargar: {missing}. La demo sigue con el modelo disponible."
         )
 
     reason = metrics.get("selection", {}).get("reason", "")
-    st.info(f"Modelo operativo del proyecto: **{selected}**. {reason}")
-
     names = list(models.keys())
     default_idx = names.index(selected) if selected in names else 0
-    model_name = st.sidebar.radio(
-        "Modelo para esta estimación",
-        names,
-        index=default_idx,
-        help="Por defecto se usa el modelo seleccionado en la evaluación (regresión logística).",
+
+    model_name, t_screen, t_high = render_hero_with_menu(
+        names, default_idx, metrics, selected, reason
     )
     model = models[model_name]
-    t_screen, t_high = thresholds_for(metrics, model_name)
 
-    model_metrics = metrics.get("models", {}).get(model_name, {})
-    if model_metrics:
-        st.sidebar.metric("AUC-ROC (prueba)", f"{model_metrics['auc_roc']:.3f}")
-        st.sidebar.caption(
-            f"Umbral de tamizaje {t_screen:.2f} · umbral alto {t_high:.2f}"
+    left, right = st.columns([1.15, 0.85], gap="large")
+
+    with left:
+        st.markdown(
+            """
+<div class="panel">
+  <h3>Perfil de la persona</h3>
+  <div class="muted">Complete las 14 variables o use un caso de demostración.</div>
+</div>
+            """,
+            unsafe_allow_html=True,
         )
 
-    with st.form("risk_form"):
-        c1, c2 = st.columns(2)
-        with c1:
-            age = st.selectbox("Edad", AGE_LABELS, index=7)
-            sex = st.selectbox("Sexo", ["Mujer", "Hombre"])
-            bmi = st.number_input("IMC", min_value=12.0, max_value=60.0, value=27.0, step=0.1)
-            health = st.selectbox("Salud general percibida", HEALTH_LABELS, index=2)
-            phys_days = st.slider("Días de mala salud física (último mes)", 0, 30, 0)
-            ment_days = st.slider("Días de mala salud mental (último mes)", 0, 30, 2)
-            activity = st.selectbox("Actividad física el último mes", ["Sí", "No"])
-        with c2:
-            sleep = st.slider("Horas de sueño promedio", 1, 24, 7)
-            smoke = st.selectbox("Tabaquismo", SMOKE_LABELS)
-            alcohol = st.selectbox("Consumió alcohol el último mes", ["No", "Sí"])
-            diabetes = st.selectbox("Diagnóstico de diabetes", ["No", "Sí"])
-            stroke = st.selectbox("Antecedente de ACV", ["No", "Sí"])
-            kidney = st.selectbox("Enfermedad renal", ["No", "Sí"])
-            walking = st.selectbox("Dificultad para caminar/escaleras", ["No", "Sí"])
-        submitted = st.form_submit_button("Estimar riesgo")
+        active_preset = st.session_state.get("active_preset")
+        b1, b2, b3 = st.columns(3)
+        with b1:
+            if st.button(
+                "Caso bajo",
+                use_container_width=True,
+                type="primary" if active_preset == "bajo" else "secondary",
+            ):
+                apply_preset(PRESET_LOW, "bajo")
+                st.rerun()
+        with b2:
+            if st.button(
+                "Caso típico",
+                use_container_width=True,
+                type="primary" if active_preset == "tipico" else "secondary",
+            ):
+                apply_preset(PRESET_DEFAULT, "tipico")
+                st.rerun()
+        with b3:
+            if st.button(
+                "Caso alto",
+                use_container_width=True,
+                type="primary" if active_preset == "alto" else "secondary",
+            ):
+                apply_preset(PRESET_HIGH, "alto")
+                st.rerun()
 
-    if submitted:
-        st.session_state["last_row"] = form_to_row(
-            {
-                "age": age,
-                "sex": sex,
-                "bmi": bmi,
-                "health": health,
-                "phys_days": phys_days,
-                "ment_days": ment_days,
-                "activity": activity,
-                "sleep": sleep,
-                "smoke": smoke,
-                "alcohol": alcohol,
-                "diabetes": diabetes,
-                "stroke": stroke,
-                "kidney": kidney,
-                "walking": walking,
-            }
+        with st.form("risk_form"):
+            st.markdown('<div class="section-title">Demografía y salud percibida</div>', unsafe_allow_html=True)
+            c1, c2 = st.columns(2)
+            with c1:
+                st.selectbox("Edad", AGE_LABELS, key="age")
+                st.selectbox("Sexo", ["Mujer", "Hombre"], key="sex")
+                st.number_input(
+                    "IMC",
+                    min_value=12.0,
+                    max_value=60.0,
+                    step=0.1,
+                    key="bmi",
+                )
+            with c2:
+                st.selectbox("Salud general percibida", HEALTH_LABELS, key="health")
+                st.selectbox("Actividad física el último mes", ["Sí", "No"], key="activity")
+                st.slider("Horas de sueño promedio", 1, 24, key="sleep")
+
+            st.markdown('<div class="section-title">Hábitos y bienestar reciente</div>', unsafe_allow_html=True)
+            c3, c4 = st.columns(2)
+            with c3:
+                st.slider("Días de mala salud física (último mes)", 0, 30, key="phys_days")
+                st.slider("Días de mala salud mental (último mes)", 0, 30, key="ment_days")
+                st.selectbox("Tabaquismo", SMOKE_LABELS, key="smoke")
+            with c4:
+                st.selectbox("Consumió alcohol el último mes", ["No", "Sí"], key="alcohol")
+                st.selectbox("Diagnóstico de diabetes", ["No", "Sí"], key="diabetes")
+                st.selectbox("Antecedente de ACV", ["No", "Sí"], key="stroke")
+
+            st.markdown('<div class="section-title">Antecedentes</div>', unsafe_allow_html=True)
+            c5, c6 = st.columns(2)
+            with c5:
+                st.selectbox("Enfermedad renal", ["No", "Sí"], key="kidney")
+            with c6:
+                st.selectbox("Dificultad para caminar/escaleras", ["No", "Sí"], key="walking")
+
+            submitted = st.form_submit_button(
+                "Estimar riesgo",
+                use_container_width=True,
+                type="primary",
+            )
+
+        if submitted:
+            st.session_state["last_row"] = form_to_row(
+                {key: st.session_state[key] for key in PRESET_DEFAULT}
+            )
+            st.session_state["active_preset"] = None
+
+    with right:
+        st.markdown(
+            """
+<div class="panel">
+  <h3>Resultado</h3>
+  <div class="muted">Se actualiza al estimar o al cargar un caso de demo.</div>
+</div>
+            """,
+            unsafe_allow_html=True,
         )
 
-    row = st.session_state.get("last_row")
-    if row is None:
-        st.info("Complete el formulario y pulse Estimar riesgo.")
-        return
+        row = st.session_state.get("last_row")
+        if row is None:
+            st.info(
+                "Pulse **Estimar riesgo** o cargue un **caso de demostración** "
+                "para ver el nivel Bajo / Moderado / Alto."
+            )
+        else:
+            X = pd.DataFrame([row], columns=FEATURE_COLUMNS)
+            prob = float(model.predict_proba(X)[0, 1])
 
-    X = pd.DataFrame([row], columns=FEATURE_COLUMNS)
-    prob = float(model.predict_proba(X)[0, 1])
+            if prob < t_screen:
+                level, advice = (
+                    "Bajo",
+                    "Mantener hábitos saludables y control anual.",
+                )
+            elif prob < t_high:
+                level, advice = (
+                    "Moderado",
+                    "Tomar la presión arterial y consultar en el puesto de salud.",
+                )
+            else:
+                level, advice = (
+                    "Alto",
+                    "Remisión prioritaria a consulta médica.",
+                )
 
-    if prob < t_screen:
-        level, color, advice = (
-            "Bajo",
-            "green",
-            "Mantener hábitos saludables y control anual.",
-        )
-    elif prob < t_high:
-        level, color, advice = (
-            "Moderado",
-            "orange",
-            "Tomar la presión arterial y consultar en el puesto de salud.",
-        )
-    else:
-        level, color, advice = (
-            "Alto",
-            "red",
-            "Remisión prioritaria a consulta médica.",
-        )
+            render_result(level, prob, advice, model_name)
 
-    st.subheader(f"Nivel de riesgo: :{color}[{level}]")
-    st.caption(f"Estimación con **{model_name}**")
-    st.metric("Probabilidad estimada", f"{prob:.1%}")
-    st.write(advice)
-    st.progress(min(max(prob, 0.0), 1.0))
+            contrib = local_contributions(model, X)
+            if contrib is not None:
+                st.markdown("**Factores que más pesan en esta persona**")
+                st.dataframe(contrib.head(6), hide_index=True, width="stretch")
+            else:
+                importance_path = REPORTS_DIR / "xgboost_importance.json"
+                if importance_path.exists():
+                    imp = pd.read_json(importance_path)
+                    imp["Factor"] = imp["feature"].map(FEATURE_LABELS)
+                    st.markdown("**Importancia global de XGBoost**")
+                    st.caption("No es explicación caso a caso.")
+                    st.bar_chart(imp.set_index("Factor")["importance"].head(8))
 
-    contrib = local_contributions(model, X)
-    if contrib is not None:
-        st.markdown("**Factores que más pesan en esta persona** (regresión logística)")
-        st.dataframe(contrib.head(6), hide_index=True, width="stretch")
-    else:
-        importance_path = REPORTS_DIR / "xgboost_importance.json"
-        if importance_path.exists():
-            imp = pd.read_json(importance_path)
-            imp["Factor"] = imp["feature"].map(FEATURE_LABELS)
-            st.markdown("**Importancia global de XGBoost** (no es explicación caso a caso)")
-            st.bar_chart(imp.set_index("Factor")["importance"].head(8))
-
-    st.warning(
-        "Resultado orientativo con base en encuesta BRFSS (EE. UU.). "
-        "No es un diagnóstico clínico."
-    )
+            st.warning(
+                "Resultado orientativo con base en encuesta BRFSS (EE. UU.). "
+                "No es un diagnóstico clínico."
+            )
 
 
 if __name__ == "__main__":

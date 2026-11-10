@@ -37,7 +37,7 @@ from src.config import (
 
 
 def load_test():
-    """Carga el 20 % de prueba (no se usó para tunear hiperparámetros)."""
+    """Carga el 15 % de prueba (no se usó para tunear hiperparámetros)."""
     test = pd.read_parquet(DATA_PROCESSED / "test.parquet")
     y = test[TARGET_COLUMN]
     X = test.drop(columns=[TARGET_COLUMN])

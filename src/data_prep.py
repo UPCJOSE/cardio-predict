@@ -1,7 +1,7 @@
 """Limpieza, transformación, ingeniería de características y partición.
 
 Convierte el CSV BRFSS (texto Yes/No, rangos de edad, etc.) al esquema numérico
-de 14 predictores + HeartDisease, y escribe train.parquet / test.parquet.
+de 14 predictores + HeartDisease, y escribe train/val/test.parquet (70/15/15).
 """
 from __future__ import annotations
 
@@ -20,6 +20,8 @@ from src.config import (
     RAW_CSV,
     TARGET_COLUMN,
     TEST_SIZE,
+    TRAIN_SIZE,
+    VAL_SIZE,
 )
 
 
@@ -96,34 +98,61 @@ def clean_and_engineer(df: pd.DataFrame):
     return out, quality
 
 
-def split_data(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-    """80/20 estratificado por HeartDisease (misma proporción de positivos en ambos)."""
+def split_data(
+    df: pd.DataFrame,
+) -> tuple[
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.Series,
+    pd.Series,
+    pd.Series,
+]:
+    """70/15/15 estratificado por HeartDisease (misma proporción de positivos)."""
+    if abs(TRAIN_SIZE + VAL_SIZE + TEST_SIZE - 1.0) > 1e-9:
+        raise ValueError("TRAIN_SIZE + VAL_SIZE + TEST_SIZE debe sumar 1.0")
+
     X = df[FEATURE_COLUMNS]
     y = df[TARGET_COLUMN]
-    return train_test_split(
+    X_train, X_temp, y_train, y_temp = train_test_split(
         X,
         y,
-        test_size=TEST_SIZE,
+        test_size=(1.0 - TRAIN_SIZE),
         random_state=RANDOM_STATE,
         stratify=y,
     )
+    # Del 30 % restante: mitad val, mitad test → 15 % / 15 % del total.
+    relative_test = TEST_SIZE / (VAL_SIZE + TEST_SIZE)
+    X_val, X_test, y_val, y_test = train_test_split(
+        X_temp,
+        y_temp,
+        test_size=relative_test,
+        random_state=RANDOM_STATE,
+        stratify=y_temp,
+    )
+    return X_train, X_val, X_test, y_train, y_val, y_test
 
 
 def save_processed(
     X_train: pd.DataFrame,
+    X_val: pd.DataFrame,
     X_test: pd.DataFrame,
     y_train: pd.Series,
+    y_val: pd.Series,
     y_test: pd.Series,
     quality: dict,
 ) -> None:
-    """Guarda train/test en parquet y el informe de calidad en JSON."""
+    """Guarda train/val/test en parquet y el informe de calidad en JSON."""
     DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
-    train = X_train.copy()
-    train[TARGET_COLUMN] = y_train.values
-    test = X_test.copy()
-    test[TARGET_COLUMN] = y_test.values
-    train.to_parquet(DATA_PROCESSED / "train.parquet", index=False)
-    test.to_parquet(DATA_PROCESSED / "test.parquet", index=False)
+
+    def _pack(X: pd.DataFrame, y: pd.Series) -> pd.DataFrame:
+        out = X.copy()
+        out[TARGET_COLUMN] = y.values
+        return out
+
+    _pack(X_train, y_train).to_parquet(DATA_PROCESSED / "train.parquet", index=False)
+    _pack(X_val, y_val).to_parquet(DATA_PROCESSED / "val.parquet", index=False)
+    _pack(X_test, y_test).to_parquet(DATA_PROCESSED / "test.parquet", index=False)
     (DATA_PROCESSED / "quality_report.json").write_text(
         json.dumps(quality, indent=2), encoding="utf-8"
     )
@@ -133,12 +162,19 @@ def run() -> dict:
     """Pipeline completo de datos. Devuelve el dict de calidad (también lo imprime)."""
     raw = load_raw()
     cleaned, quality = clean_and_engineer(raw)
-    X_train, X_test, y_train, y_test = split_data(cleaned)
+    X_train, X_val, X_test, y_train, y_val, y_test = split_data(cleaned)
+    quality["split"] = {
+        "train": TRAIN_SIZE,
+        "val": VAL_SIZE,
+        "test": TEST_SIZE,
+    }
     quality["train_rows"] = int(len(X_train))
+    quality["val_rows"] = int(len(X_val))
     quality["test_rows"] = int(len(X_test))
     quality["train_positive_rate"] = float(y_train.mean())
+    quality["val_positive_rate"] = float(y_val.mean())
     quality["test_positive_rate"] = float(y_test.mean())
-    save_processed(X_train, X_test, y_train, y_test, quality)
+    save_processed(X_train, X_val, X_test, y_train, y_val, y_test, quality)
     print(json.dumps(quality, indent=2))
     return quality
 

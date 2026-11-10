@@ -1,7 +1,7 @@
 """Constantes del experimento: rutas, semilla, variables y umbrales.
 
 Cualquier script debe importar de aquí para no duplicar nombres de columnas
-ni cambiar a medias la partición train/test.
+ni cambiar a medias la partición train/val/test.
 """
 from pathlib import Path
 
@@ -20,8 +20,9 @@ RAW_URL = (
 )
 
 RANDOM_STATE = 42  # reproduce la misma partición y el mismo RandomizedSearchCV
-TEST_SIZE = 0.20  # 20 % prueba; el 80 % restante es entrenamiento
-N_CV_FOLDS = 5  # pliegues estratificados para tunear hiperparámetros
+TRAIN_SIZE = 0.70  # 70 % entrenamiento
+VAL_SIZE = 0.15  # 15 % validación (ajuste de hiperparámetros)
+TEST_SIZE = 0.15  # 15 % prueba (evaluación final; no se usa para tunear)
 N_ITER_SEARCH = 15  # intentos de RandomizedSearchCV
 
 # 14 predictores de la metodología (nombres canónicos tras el mapeo del CSV).

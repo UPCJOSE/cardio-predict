@@ -21,8 +21,15 @@
     "HadKidneyDisease",
     "DifficultyWalking"
   ],
-  "train_rows": 230129,
-  "test_rows": 57533,
-  "train_positive_rate": 0.0943861920922613,
-  "test_positive_rate": 0.0943806163419255
+  "split": {
+    "train": 0.7,
+    "val": 0.15,
+    "test": 0.15
+  },
+  "train_rows": 201363,
+  "val_rows": 43149,
+  "test_rows": 43150,
+  "train_positive_rate": 0.09438675426965232,
+  "val_positive_rate": 0.09437066907691952,
+  "test_positive_rate": 0.09439165701042873
 }
