@@ -256,8 +256,16 @@ html, body, [class*="css"] {
   opacity: 0.88;
 }
 
-.hero-row {
-  margin-bottom: 1.2rem;
+.cp-side-title {
+  font-family: "Fraunces", serif;
+  color: var(--cp-text);
+  font-size: 1.2rem;
+  margin: 0.45rem 0 0.15rem 0;
+}
+.cp-side-caption {
+  color: var(--cp-muted);
+  font-size: 0.88rem;
+  margin-bottom: 0.85rem;
 }
 
 .panel {
@@ -352,23 +360,6 @@ div[data-testid="stFormSubmitButton"] button {
   background: var(--cp-secondary-bg) !important;
   color: var(--cp-secondary-text) !important;
   border: 1px solid var(--cp-secondary-border) !important;
-}
-
-div[data-testid="stPopover"] > button {
-  background: var(--cp-menu-btn) !important;
-  color: var(--cp-menu-btn-text) !important;
-  border: none !important;
-  border-radius: 14px !important;
-  font-weight: 700 !important;
-  font-size: 1.15rem !important;
-  letter-spacing: 0.02em;
-  min-height: 3rem;
-  padding: 0.65rem 0.85rem !important;
-  box-shadow: 0 10px 22px rgba(11, 61, 74, 0.18);
-}
-div[data-testid="stPopover"] > button:hover {
-  background: var(--cp-menu-btn-hover) !important;
-  color: #ffffff !important;
 }
 
 .stApp:has(.theme-dark) [data-testid="stMarkdownContainer"],
@@ -474,13 +465,17 @@ def form_to_row(values: dict) -> dict:
     }
 
 
-def init_form_state() -> None:
-    """Inicializa keys del formulario una sola vez."""
+def init_form_state(default_model: str | None = None) -> None:
+    """Inicializa keys del formulario y de la barra lateral una sola vez."""
     for key, value in PRESET_DEFAULT.items():
         if key not in st.session_state:
             st.session_state[key] = value
     if "theme_mode" not in st.session_state:
         st.session_state["theme_mode"] = "Claro"
+    if "sidebar_open" not in st.session_state:
+        st.session_state["sidebar_open"] = True
+    if default_model and "model_choice" not in st.session_state:
+        st.session_state["model_choice"] = default_model
 
 
 def apply_preset(preset: dict, preset_name: str) -> None:
@@ -506,56 +501,14 @@ def apply_theme(theme_mode: str) -> None:
     )
 
 
-def render_hero_with_menu(
-    names: list[str],
-    default_idx: int,
-    metrics: dict,
-    selected: str,
-    reason: str,
-) -> tuple[str, float, float]:
-    """☰ a la izquierda del hero + controles de modelo y tema."""
-    try:
-        menu_col, hero_col = st.columns(
-            [0.09, 0.91], gap="small", vertical_alignment="top"
-        )
-    except TypeError:
-        menu_col, hero_col = st.columns([0.09, 0.91], gap="small")
-    with menu_col:
-        with st.popover("☰", use_container_width=True):
-            st.markdown("**Presentación**")
-            st.caption("Controles técnicos para la demo en vivo.")
-            st.radio(
-                "Apariencia",
-                THEME_OPTIONS,
-                key="theme_mode",
-                horizontal=True,
-                help="Claro, Oscuro o según el sistema (como en Deploy).",
-            )
-            st.markdown("**Modelo para esta estimación**")
-            model_name = st.radio(
-                "Modelo",
-                names,
-                index=default_idx,
-                label_visibility="collapsed",
-                help="Por defecto se usa el modelo seleccionado en la evaluación.",
-            )
-            t_screen, t_high = thresholds_for(metrics, model_name)
-            model_metrics = metrics.get("models", {}).get(model_name, {})
-            if model_metrics:
-                st.metric("AUC-ROC (prueba)", f"{model_metrics['auc_roc']:.3f}")
-                st.caption(
-                    f"Umbral de tamizaje {t_screen:.2f} · umbral alto {t_high:.2f}"
-                )
-            with st.expander("¿Por qué este modelo?", expanded=False):
-                st.write(f"**Operativo del proyecto:** {selected}")
-                if reason:
-                    st.write(reason)
-                st.caption(
-                    "Partición actual del experimento: 70 % train / 15 % val / 15 % test."
-                )
-    with hero_col:
-        st.markdown(
-            """
+def toggle_sidebar() -> None:
+    """Abre o cierra la barra lateral de presentación."""
+    st.session_state["sidebar_open"] = not st.session_state.get("sidebar_open", True)
+
+
+def render_hero() -> None:
+    st.markdown(
+        """
 <div class="hero">
   <h1>Cardio Predict</h1>
   <p>
@@ -566,10 +519,224 @@ def render_hero_with_menu(
     Herramienta educativa de apoyo. No sustituye valoración médica ni diagnóstico.
   </div>
 </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_sidebar_controls(
+    names: list[str],
+    metrics: dict,
+    selected: str,
+    reason: str,
+) -> tuple[str, float, float]:
+    """Controles de presentación dentro de la barra lateral."""
+    st.markdown(
+        '<div class="cp-side-title">Presentación</div>'
+        '<div class="cp-side-caption">Tema, modelo y datos de la demo en vivo.</div>',
+        unsafe_allow_html=True,
+    )
+    st.radio(
+        "Apariencia",
+        THEME_OPTIONS,
+        key="theme_mode",
+        horizontal=True,
+        help="Claro, Oscuro o según el sistema (como en Deploy).",
+    )
+    st.markdown("**Modelo para esta estimación**")
+    model_name = st.radio(
+        "Modelo",
+        names,
+        key="model_choice",
+        label_visibility="collapsed",
+        help="Por defecto se usa el modelo seleccionado en la evaluación.",
+    )
+    t_screen, t_high = thresholds_for(metrics, model_name)
+    model_metrics = metrics.get("models", {}).get(model_name, {})
+    if model_metrics:
+        st.metric("AUC-ROC (prueba)", f"{model_metrics['auc_roc']:.3f}")
+        st.caption(f"Umbral de tamizaje {t_screen:.2f} · umbral alto {t_high:.2f}")
+    with st.expander("¿Por qué este modelo?", expanded=False):
+        st.write(f"**Operativo del proyecto:** {selected}")
+        if reason:
+            st.write(reason)
+        st.caption(
+            "Partición actual del experimento: 70 % train / 15 % val / 15 % test."
+        )
+    return model_name, t_screen, t_high
+
+
+def render_estimator(
+    model,
+    model_name: str,
+    t_screen: float,
+    t_high: float,
+) -> None:
+    """Formulario de perfil + panel de resultado."""
+    left, right = st.columns([1.15, 0.85], gap="large")
+
+    with left:
+        st.markdown(
+            """
+<div class="panel">
+  <h3>Perfil de la persona</h3>
+  <div class="muted">Complete las 14 variables o use un caso de demostración.</div>
+</div>
             """,
             unsafe_allow_html=True,
         )
-    return model_name, t_screen, t_high
+
+        active_preset = st.session_state.get("active_preset")
+        b1, b2, b3 = st.columns(3)
+        with b1:
+            if st.button(
+                "Caso bajo",
+                use_container_width=True,
+                type="primary" if active_preset == "bajo" else "secondary",
+            ):
+                apply_preset(PRESET_LOW, "bajo")
+                st.rerun()
+        with b2:
+            if st.button(
+                "Caso típico",
+                use_container_width=True,
+                type="primary" if active_preset == "tipico" else "secondary",
+            ):
+                apply_preset(PRESET_DEFAULT, "tipico")
+                st.rerun()
+        with b3:
+            if st.button(
+                "Caso alto",
+                use_container_width=True,
+                type="primary" if active_preset == "alto" else "secondary",
+            ):
+                apply_preset(PRESET_HIGH, "alto")
+                st.rerun()
+
+        with st.form("risk_form"):
+            st.markdown(
+                '<div class="section-title">Demografía y salud percibida</div>',
+                unsafe_allow_html=True,
+            )
+            c1, c2 = st.columns(2)
+            with c1:
+                st.selectbox("Edad", AGE_LABELS, key="age")
+                st.selectbox("Sexo", ["Mujer", "Hombre"], key="sex")
+                st.number_input(
+                    "IMC",
+                    min_value=12.0,
+                    max_value=60.0,
+                    step=0.1,
+                    key="bmi",
+                )
+            with c2:
+                st.selectbox("Salud general percibida", HEALTH_LABELS, key="health")
+                st.selectbox(
+                    "Actividad física el último mes", ["Sí", "No"], key="activity"
+                )
+                st.slider("Horas de sueño promedio", 1, 24, key="sleep")
+
+            st.markdown(
+                '<div class="section-title">Hábitos y bienestar reciente</div>',
+                unsafe_allow_html=True,
+            )
+            c3, c4 = st.columns(2)
+            with c3:
+                st.slider(
+                    "Días de mala salud física (último mes)", 0, 30, key="phys_days"
+                )
+                st.slider(
+                    "Días de mala salud mental (último mes)", 0, 30, key="ment_days"
+                )
+                st.selectbox("Tabaquismo", SMOKE_LABELS, key="smoke")
+            with c4:
+                st.selectbox(
+                    "Consumió alcohol el último mes", ["No", "Sí"], key="alcohol"
+                )
+                st.selectbox("Diagnóstico de diabetes", ["No", "Sí"], key="diabetes")
+                st.selectbox("Antecedente de ACV", ["No", "Sí"], key="stroke")
+
+            st.markdown(
+                '<div class="section-title">Antecedentes</div>',
+                unsafe_allow_html=True,
+            )
+            c5, c6 = st.columns(2)
+            with c5:
+                st.selectbox("Enfermedad renal", ["No", "Sí"], key="kidney")
+            with c6:
+                st.selectbox(
+                    "Dificultad para caminar/escaleras", ["No", "Sí"], key="walking"
+                )
+
+            submitted = st.form_submit_button(
+                "Estimar riesgo",
+                use_container_width=True,
+                type="primary",
+            )
+
+        if submitted:
+            st.session_state["last_row"] = form_to_row(
+                {key: st.session_state[key] for key in PRESET_DEFAULT}
+            )
+            st.session_state["active_preset"] = None
+
+    with right:
+        st.markdown(
+            """
+<div class="panel">
+  <h3>Resultado</h3>
+  <div class="muted">Se actualiza al estimar o al cargar un caso de demo.</div>
+</div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        row = st.session_state.get("last_row")
+        if row is None:
+            st.info(
+                "Pulse **Estimar riesgo** o cargue un **caso de demostración** "
+                "para ver el nivel Bajo / Moderado / Alto."
+            )
+            return
+
+        X = pd.DataFrame([row], columns=FEATURE_COLUMNS)
+        prob = float(model.predict_proba(X)[0, 1])
+
+        if prob < t_screen:
+            level, advice = (
+                "Bajo",
+                "Mantener hábitos saludables y control anual.",
+            )
+        elif prob < t_high:
+            level, advice = (
+                "Moderado",
+                "Tomar la presión arterial y consultar en el puesto de salud.",
+            )
+        else:
+            level, advice = (
+                "Alto",
+                "Remisión prioritaria a consulta médica.",
+            )
+
+        render_result(level, prob, advice, model_name)
+
+        contrib = local_contributions(model, X)
+        if contrib is not None:
+            st.markdown("**Factores que más pesan en esta persona**")
+            st.dataframe(contrib.head(6), hide_index=True, width="stretch")
+        else:
+            importance_path = REPORTS_DIR / "xgboost_importance.json"
+            if importance_path.exists():
+                imp = pd.read_json(importance_path)
+                imp["Factor"] = imp["feature"].map(FEATURE_LABELS)
+                st.markdown("**Importancia global de XGBoost**")
+                st.caption("No es explicación caso a caso.")
+                st.bar_chart(imp.set_index("Factor")["importance"].head(8))
+
+        st.warning(
+            "Resultado orientativo con base en encuesta BRFSS (EE. UU.). "
+            "No es un diagnóstico clínico."
+        )
 
 
 def render_result(level: str, prob: float, advice: str, model_name: str) -> None:
@@ -616,157 +783,41 @@ def main():
 
     reason = metrics.get("selection", {}).get("reason", "")
     names = list(models.keys())
-    default_idx = names.index(selected) if selected in names else 0
+    if selected not in names:
+        selected = names[0]
+    if "model_choice" not in st.session_state or st.session_state["model_choice"] not in names:
+        st.session_state["model_choice"] = selected
 
-    model_name, t_screen, t_high = render_hero_with_menu(
-        names, default_idx, metrics, selected, reason
-    )
-    model = models[model_name]
+    sidebar_open = st.session_state.get("sidebar_open", True)
 
-    left, right = st.columns([1.15, 0.85], gap="large")
-
-    with left:
-        st.markdown(
-            """
-<div class="panel">
-  <h3>Perfil de la persona</h3>
-  <div class="muted">Complete las 14 variables o use un caso de demostración.</div>
-</div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        active_preset = st.session_state.get("active_preset")
-        b1, b2, b3 = st.columns(3)
-        with b1:
-            if st.button(
-                "Caso bajo",
-                use_container_width=True,
-                type="primary" if active_preset == "bajo" else "secondary",
-            ):
-                apply_preset(PRESET_LOW, "bajo")
-                st.rerun()
-        with b2:
-            if st.button(
-                "Caso típico",
-                use_container_width=True,
-                type="primary" if active_preset == "tipico" else "secondary",
-            ):
-                apply_preset(PRESET_DEFAULT, "tipico")
-                st.rerun()
-        with b3:
-            if st.button(
-                "Caso alto",
-                use_container_width=True,
-                type="primary" if active_preset == "alto" else "secondary",
-            ):
-                apply_preset(PRESET_HIGH, "alto")
-                st.rerun()
-
-        with st.form("risk_form"):
-            st.markdown('<div class="section-title">Demografía y salud percibida</div>', unsafe_allow_html=True)
-            c1, c2 = st.columns(2)
-            with c1:
-                st.selectbox("Edad", AGE_LABELS, key="age")
-                st.selectbox("Sexo", ["Mujer", "Hombre"], key="sex")
-                st.number_input(
-                    "IMC",
-                    min_value=12.0,
-                    max_value=60.0,
-                    step=0.1,
-                    key="bmi",
-                )
-            with c2:
-                st.selectbox("Salud general percibida", HEALTH_LABELS, key="health")
-                st.selectbox("Actividad física el último mes", ["Sí", "No"], key="activity")
-                st.slider("Horas de sueño promedio", 1, 24, key="sleep")
-
-            st.markdown('<div class="section-title">Hábitos y bienestar reciente</div>', unsafe_allow_html=True)
-            c3, c4 = st.columns(2)
-            with c3:
-                st.slider("Días de mala salud física (último mes)", 0, 30, key="phys_days")
-                st.slider("Días de mala salud mental (último mes)", 0, 30, key="ment_days")
-                st.selectbox("Tabaquismo", SMOKE_LABELS, key="smoke")
-            with c4:
-                st.selectbox("Consumió alcohol el último mes", ["No", "Sí"], key="alcohol")
-                st.selectbox("Diagnóstico de diabetes", ["No", "Sí"], key="diabetes")
-                st.selectbox("Antecedente de ACV", ["No", "Sí"], key="stroke")
-
-            st.markdown('<div class="section-title">Antecedentes</div>', unsafe_allow_html=True)
-            c5, c6 = st.columns(2)
-            with c5:
-                st.selectbox("Enfermedad renal", ["No", "Sí"], key="kidney")
-            with c6:
-                st.selectbox("Dificultad para caminar/escaleras", ["No", "Sí"], key="walking")
-
-            submitted = st.form_submit_button(
-                "Estimar riesgo",
-                use_container_width=True,
-                type="primary",
+    if sidebar_open:
+        side, main_col = st.columns([0.24, 0.76], gap="large")
+        with side:
+            st.button(
+                "☰",
+                key="sidebar_toggle_open",
+                help="Ocultar barra lateral",
+                on_click=toggle_sidebar,
             )
-
-        if submitted:
-            st.session_state["last_row"] = form_to_row(
-                {key: st.session_state[key] for key in PRESET_DEFAULT}
+            model_name, t_screen, t_high = render_sidebar_controls(
+                names, metrics, selected, reason
             )
-            st.session_state["active_preset"] = None
-
-    with right:
-        st.markdown(
-            """
-<div class="panel">
-  <h3>Resultado</h3>
-  <div class="muted">Se actualiza al estimar o al cargar un caso de demo.</div>
-</div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        row = st.session_state.get("last_row")
-        if row is None:
-            st.info(
-                "Pulse **Estimar riesgo** o cargue un **caso de demostración** "
-                "para ver el nivel Bajo / Moderado / Alto."
+        with main_col:
+            render_hero()
+            render_estimator(models[model_name], model_name, t_screen, t_high)
+    else:
+        toggle_col, _ = st.columns([0.06, 0.94])
+        with toggle_col:
+            st.button(
+                "☰",
+                key="sidebar_toggle_closed",
+                help="Mostrar barra lateral",
+                on_click=toggle_sidebar,
             )
-        else:
-            X = pd.DataFrame([row], columns=FEATURE_COLUMNS)
-            prob = float(model.predict_proba(X)[0, 1])
-
-            if prob < t_screen:
-                level, advice = (
-                    "Bajo",
-                    "Mantener hábitos saludables y control anual.",
-                )
-            elif prob < t_high:
-                level, advice = (
-                    "Moderado",
-                    "Tomar la presión arterial y consultar en el puesto de salud.",
-                )
-            else:
-                level, advice = (
-                    "Alto",
-                    "Remisión prioritaria a consulta médica.",
-                )
-
-            render_result(level, prob, advice, model_name)
-
-            contrib = local_contributions(model, X)
-            if contrib is not None:
-                st.markdown("**Factores que más pesan en esta persona**")
-                st.dataframe(contrib.head(6), hide_index=True, width="stretch")
-            else:
-                importance_path = REPORTS_DIR / "xgboost_importance.json"
-                if importance_path.exists():
-                    imp = pd.read_json(importance_path)
-                    imp["Factor"] = imp["feature"].map(FEATURE_LABELS)
-                    st.markdown("**Importancia global de XGBoost**")
-                    st.caption("No es explicación caso a caso.")
-                    st.bar_chart(imp.set_index("Factor")["importance"].head(8))
-
-            st.warning(
-                "Resultado orientativo con base en encuesta BRFSS (EE. UU.). "
-                "No es un diagnóstico clínico."
-            )
+        model_name = st.session_state["model_choice"]
+        t_screen, t_high = thresholds_for(metrics, model_name)
+        render_hero()
+        render_estimator(models[model_name], model_name, t_screen, t_high)
 
 
 if __name__ == "__main__":
