@@ -98,11 +98,39 @@ class ValidationResult:
         )
 
 
+def _read_csv_flexible(data: bytes) -> pd.DataFrame:
+    """CSV con coma o punto y coma (export Excel ES) y decimales con coma."""
+    sample = data[:8192].decode("utf-8-sig", errors="replace")
+    use_semicolon = sample.count(";") > sample.count(",")
+    if use_semicolon:
+        df = pd.read_csv(BytesIO(data), sep=";", dtype=str)
+        # Decimales europeos en columnas típicas BRFSS / canónicas.
+        numeric_like = {
+            "BMI",
+            "PhysicalHealth",
+            "MentalHealth",
+            "SleepTime",
+            "PhysicalHealthDays",
+            "MentalHealthDays",
+            "SleepHours",
+            "AgeCategory",
+            "GeneralHealth",
+            "SmokerStatus",
+            "Sex",
+            "HeartDisease",
+        }
+        for col in df.columns:
+            if col in numeric_like or col in CANONICAL_REQUIRED:
+                df[col] = df[col].str.replace(",", ".", regex=False)
+        return df
+    return pd.read_csv(BytesIO(data))
+
+
 def _read_upload(name: str, data: bytes) -> pd.DataFrame:
     """Lee CSV o JSON desde bytes subidos en Streamlit."""
     lower = name.lower()
     if lower.endswith(".csv"):
-        return pd.read_csv(BytesIO(data))
+        return _read_csv_flexible(data)
     if lower.endswith(".json"):
         payload = json.loads(data.decode("utf-8"))
         if isinstance(payload, dict) and "records" in payload:
@@ -120,7 +148,13 @@ def detect_schema(columns: list[str]) -> str | None:
     return None
 
 
-def _validate_canonical(df: pd.DataFrame, max_row_issues: int = 80) -> ValidationResult:
+def _validate_canonical(
+    df: pd.DataFrame,
+    max_row_issues: int = 80,
+    *,
+    min_rows: int = 50,
+    require_both_classes: bool = True,
+) -> ValidationResult:
     issues: list[ValidationIssue] = []
     missing = [c for c in CANONICAL_REQUIRED if c not in df.columns]
     for col in missing:
@@ -174,7 +208,7 @@ def _validate_canonical(df: pd.DataFrame, max_row_issues: int = 80) -> Validatio
                 )
             )
 
-    if work[TARGET_COLUMN].nunique(dropna=True) < 2:
+    if require_both_classes and work[TARGET_COLUMN].nunique(dropna=True) < 2:
         issues.append(
             ValidationIssue(
                 where="objetivo",
@@ -190,15 +224,22 @@ def _validate_canonical(df: pd.DataFrame, max_row_issues: int = 80) -> Validatio
         clean = clean[(clean[col] >= lo) & (clean[col] <= hi)]
     clean = clean.reset_index(drop=True)
 
-    if len(clean) < 50:
+    if len(clean) < min_rows:
         issues.append(
             ValidationIssue(
                 where="tamaño",
-                reason=f"Tras limpiar quedan {len(clean)} filas; se necesitan al menos 50.",
+                reason=(
+                    f"Tras limpiar quedan {len(clean)} fila(s); "
+                    f"se necesitan al menos {min_rows}."
+                ),
             )
         )
 
-    ok = not blocking and len(clean) >= 50 and clean[TARGET_COLUMN].nunique() >= 2
+    classes_ok = (
+        (not require_both_classes)
+        or clean[TARGET_COLUMN].nunique() >= 2
+    )
+    ok = not blocking and len(clean) >= min_rows and classes_ok
     summary = {
         "rows_input": int(len(df)),
         "rows_valid": int(len(clean)),
@@ -212,6 +253,32 @@ def _validate_canonical(df: pd.DataFrame, max_row_issues: int = 80) -> Validatio
         issues=issues,
         summary=summary,
     )
+
+
+def validate_canonical_pattern(row: dict) -> ValidationResult:
+    """Valida un único patrón canónico (formulario Admin)."""
+    df = pd.DataFrame([row])
+    return _validate_canonical(
+        df, min_rows=1, require_both_classes=False, max_row_issues=20
+    )
+
+
+def append_active_pattern(row: dict) -> dict:
+    """Agrega un patrón validado al dataset activo (escalable: 1 + N)."""
+    result = validate_canonical_pattern(row)
+    if not result.ok or result.df is None:
+        raise ValueError(
+            "; ".join(i.reason for i in result.issues) or "Patrón inválido."
+        )
+    active = load_active_dataset()
+    if active is None or active.empty:
+        combined = result.df.copy()
+    else:
+        combined = pd.concat([active[CANONICAL_REQUIRED], result.df], ignore_index=True)
+    info = save_active_dataset(combined)
+    info["appended"] = 1
+    info["mode"] = "pattern"
+    return info
 
 
 def validate_dataframe(df: pd.DataFrame) -> ValidationResult:
@@ -294,6 +361,8 @@ def save_active_dataset(df: pd.DataFrame) -> dict:
         "json": str(ACTIVE_DATASET_JSON),
         "n_rows": int(len(ordered)),
         "positive_rate": float(ordered[TARGET_COLUMN].mean()),
+        "mode": "bulk",
+        "appended": int(len(ordered)),
     }
 
 

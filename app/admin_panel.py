@@ -21,10 +21,47 @@ from src.config import (
 )
 from src.dataset_validation import (
     active_dataset_bytes_json,
+    append_active_pattern,
     load_active_dataset,
     save_active_dataset,
     validate_upload,
 )
+
+# Etiquetas del formulario de captura (alineadas al prototipo cliente).
+AGE_LABELS = [
+    "18-24",
+    "25-29",
+    "30-34",
+    "35-39",
+    "40-44",
+    "45-49",
+    "50-54",
+    "55-59",
+    "60-64",
+    "65-69",
+    "70-74",
+    "75-79",
+    "80 o más",
+]
+HEALTH_LABELS = ["Excelente", "Muy buena", "Buena", "Regular", "Mala"]
+SMOKE_LABELS = ["Nunca", "Exfumador", "Actual"]
+FEATURE_LABELS_ES = {
+    "AgeCategory": "Edad",
+    "Sex": "Sexo (1=hombre)",
+    "BMI": "IMC",
+    "GeneralHealth": "Salud percibida",
+    "PhysicalHealthDays": "Días mala salud física",
+    "MentalHealthDays": "Días mala salud mental",
+    "PhysicalActivities": "Actividad física",
+    "SleepHours": "Horas de sueño",
+    "SmokerStatus": "Tabaquismo",
+    "AlcoholDrinkers": "Alcohol",
+    "HadDiabetes": "Diabetes",
+    "HadStroke": "ACV",
+    "HadKidneyDisease": "Enfermedad renal",
+    "DifficultyWalking": "Dificultad al caminar",
+    TARGET_COLUMN: "Enfermedad cardíaca",
+}
 from src.logistic_retrain import (
     load_admin_settings,
     load_training_run,
@@ -99,47 +136,199 @@ def _render_password_section() -> None:
                 st.error(message)
 
 
-def _render_dataset_section() -> pd.DataFrame | None:
-    st.markdown("#### 1. Base de datos externa")
+def _dataset_train_ready(active: pd.DataFrame | None) -> tuple[bool, str]:
+    if active is None or active.empty:
+        return False, "No hay dataset activo."
+    n = len(active)
+    n_cls = int(active[TARGET_COLUMN].nunique())
+    if n < 50:
+        return False, f"Hay {n} patrón(es); para entrenar se necesitan ≥ 50."
+    if n_cls < 2:
+        return False, "Hace falta al menos un caso 0 y un caso 1 en HeartDisease."
+    return True, f"Listo para entrenar ({n:,} patrones, {n_cls} clases)."
+
+
+def _render_pattern_form() -> None:
+    """Captura de un patrón (mismas variables del proyecto)."""
+    st.markdown("##### A) Formulario de captura (1 patrón)")
     st.caption(
-        "Suba CSV/JSON en formato BRFSS cleaned o canónico "
-        f"({len(FEATURE_COLUMNS)} variables + `{TARGET_COLUMN}`)."
+        "Registra un caso nuevo con los campos del proyecto. "
+        "Demuestra que el sistema escala desde un solo patrón."
+    )
+    with st.form("admin_pattern_form"):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            age = st.selectbox("Edad", AGE_LABELS)
+            sex = st.selectbox("Sexo", ["Mujer", "Hombre"])
+            bmi = st.number_input("IMC (kg/m²)", min_value=10.0, max_value=60.0, value=25.0)
+            health = st.selectbox("Salud percibida", HEALTH_LABELS)
+            phys = st.slider("Días mala salud física", 0, 30, 0)
+        with c2:
+            ment = st.slider("Días mala salud mental", 0, 30, 0)
+            activity = st.selectbox("Actividad física (último mes)", ["Sí", "No"])
+            sleep = st.number_input("Horas de sueño", min_value=1, max_value=24, value=7)
+            smoke = st.selectbox("Tabaquismo", SMOKE_LABELS)
+            alcohol = st.selectbox("Consumo de alcohol", ["No", "Sí"])
+        with c3:
+            diabetes = st.selectbox("Diabetes", ["No", "Sí"])
+            stroke = st.selectbox("Antecedente de ACV", ["No", "Sí"])
+            kidney = st.selectbox("Enfermedad renal", ["No", "Sí"])
+            walk = st.selectbox("Dificultad para caminar", ["No", "Sí"])
+            heart = st.selectbox("Enfermedad cardíaca (etiqueta)", ["No", "Sí"])
+        mode = st.radio(
+            "Al guardar",
+            ["Agregar al dataset activo", "Reemplazar dataset (solo este patrón)"],
+            horizontal=True,
+        )
+        submitted = st.form_submit_button("Registrar patrón", type="primary")
+
+    if not submitted:
+        return
+
+    row = {
+        "AgeCategory": AGE_LABELS.index(age),
+        "Sex": 1 if sex == "Hombre" else 0,
+        "BMI": float(bmi),
+        "GeneralHealth": HEALTH_LABELS.index(health),
+        "PhysicalHealthDays": int(phys),
+        "MentalHealthDays": int(ment),
+        "PhysicalActivities": 1 if activity == "Sí" else 0,
+        "SleepHours": float(sleep),
+        "SmokerStatus": SMOKE_LABELS.index(smoke),
+        "AlcoholDrinkers": 1 if alcohol == "Sí" else 0,
+        "HadDiabetes": 1 if diabetes == "Sí" else 0,
+        "HadStroke": 1 if stroke == "Sí" else 0,
+        "HadKidneyDisease": 1 if kidney == "Sí" else 0,
+        "DifficultyWalking": 1 if walk == "Sí" else 0,
+        TARGET_COLUMN: 1 if heart == "Sí" else 0,
+    }
+    try:
+        if mode.startswith("Reemplazar"):
+            info = save_active_dataset(pd.DataFrame([row]))
+            st.session_state["last_ingest"] = {
+                "mode": "pattern_replace",
+                "n_rows": info["n_rows"],
+                "added": 1,
+            }
+            st.success("Dataset reemplazado con 1 patrón.")
+        else:
+            info = append_active_pattern(row)
+            st.session_state["last_ingest"] = {
+                "mode": "pattern_append",
+                "n_rows": info["n_rows"],
+                "added": 1,
+            }
+            st.success(f"Patrón agregado. Dataset activo: **{info['n_rows']:,}** filas.")
+        st.rerun()
+    except Exception as exc:  # noqa: BLE001
+        st.error(f"No se pudo registrar el patrón: {exc}")
+
+
+def _render_bulk_upload() -> None:
+    """Carga masiva CSV/JSON."""
+    st.markdown("##### B) Cargue masivo (CSV o JSON)")
+    st.caption(
+        "Suba muchos patrones de una vez. Formatos: BRFSS cleaned o canónico "
+        f"({len(FEATURE_COLUMNS)} variables + `{TARGET_COLUMN}`). "
+        "Acepta CSV con `,` o `;` (Excel en español)."
     )
     uploaded = st.file_uploader(
-        "Archivo nuevo",
+        "Archivo masivo",
         type=["csv", "json"],
-        help="Se valida antes de activarlo para reentrenar.",
+        help="Se valida y limpia antes de activarlo.",
+        key="admin_bulk_upload",
     )
-    if uploaded is not None:
-        result = validate_upload(uploaded.name, uploaded.getvalue())
-        if result.issues:
-            st.warning(f"Se detectaron {len(result.issues)} aviso(s)/error(es).")
-            st.dataframe(result.issues_frame(), hide_index=True, width="stretch")
-        if result.ok and result.df is not None:
-            st.success(
-                f"Validación OK · esquema `{result.schema}` · "
-                f"{result.summary.get('rows_valid')} filas útiles."
-            )
-            if st.button("Activar este dataset", type="primary"):
+    if uploaded is None:
+        return
+
+    result = validate_upload(uploaded.name, uploaded.getvalue())
+    if result.issues:
+        st.warning(f"Se detectaron {len(result.issues)} aviso(s)/error(es).")
+        st.dataframe(result.issues_frame(), hide_index=True, width="stretch")
+    if result.ok and result.df is not None:
+        n_ok = int(result.summary.get("rows_valid") or len(result.df))
+        st.success(
+            f"Validación OK · esquema `{result.schema}` · "
+            f"**{n_ok:,}** patrones útiles. El cargue masivo es escalable."
+        )
+        a1, a2 = st.columns(2)
+        with a1:
+            if st.button("Reemplazar dataset activo", type="primary", key="bulk_replace"):
                 info = save_active_dataset(result.df)
                 st.session_state["last_validation_summary"] = result.summary
+                st.session_state["last_ingest"] = {
+                    "mode": "bulk_replace",
+                    "n_rows": info["n_rows"],
+                    "added": info["n_rows"],
+                    "file": uploaded.name,
+                }
+                st.success(f"Dataset activo: {info['n_rows']:,} filas.")
+                st.rerun()
+        with a2:
+            if st.button("Agregar al dataset activo", key="bulk_append"):
+                current = load_active_dataset()
+                merged = (
+                    result.df
+                    if current is None
+                    else pd.concat(
+                        [current[FEATURE_COLUMNS + [TARGET_COLUMN]], result.df],
+                        ignore_index=True,
+                    )
+                )
+                info = save_active_dataset(merged)
+                st.session_state["last_ingest"] = {
+                    "mode": "bulk_append",
+                    "n_rows": info["n_rows"],
+                    "added": n_ok,
+                    "file": uploaded.name,
+                }
                 st.success(
-                    f"Dataset activo guardado ({info['n_rows']} filas). "
-                    f"JSON: `{Path(info['json']).name}`"
+                    f"Se agregaron {n_ok:,} patrones. Total activo: {info['n_rows']:,}."
                 )
                 st.rerun()
-        elif not result.ok:
-            st.error("El archivo no se puede usar para reentrenar hasta corregir los errores.")
+    elif not result.ok:
+        st.error(
+            "El archivo no se puede usar hasta corregir los errores. "
+            "Si exportó desde Excel, use CSV UTF-8 o deje el `;` "
+            "(el Admin ya lo interpreta)."
+        )
+
+
+def _render_dataset_section() -> pd.DataFrame | None:
+    st.markdown("### Fase 1 · Carga de datos")
+    st.caption(
+        "Dos vías: **formulario (1 patrón)** o **cargue masivo (CSV/JSON)**. "
+        "Ambas alimentan el mismo dataset activo."
+    )
+    _render_pattern_form()
+    st.divider()
+    _render_bulk_upload()
 
     active = load_active_dataset()
-    c1, c2, c3 = st.columns(3)
+    st.markdown("##### Dataset activo")
+    ingest = st.session_state.get("last_ingest") or {}
+    c1, c2, c3, c4 = st.columns(4)
     with c1:
-        st.metric("Filas activas", "—" if active is None else f"{len(active):,}")
+        st.metric("Patrones activos", "—" if active is None else f"{len(active):,}")
     with c2:
         rate = None if active is None else float(active[TARGET_COLUMN].mean())
         st.metric("Tasa positiva", "—" if rate is None else f"{rate:.1%}")
     with c3:
-        st.metric("Archivo JSON", "sí" if ACTIVE_DATASET_JSON.exists() else "no")
+        last_mode = {
+            "pattern_append": "1 patrón (+)",
+            "pattern_replace": "1 patrón (nuevo)",
+            "bulk_replace": "Masivo (reemplazo)",
+            "bulk_append": "Masivo (+)",
+        }.get(ingest.get("mode", ""), "—")
+        st.metric("Última carga", last_mode)
+    with c4:
+        st.metric("Último agregado", ingest.get("added", "—"))
+
+    ready, ready_msg = _dataset_train_ready(active)
+    if ready:
+        st.success(ready_msg)
+    else:
+        st.info(ready_msg)
 
     payload = active_dataset_bytes_json()
     st.download_button(
@@ -153,8 +342,74 @@ def _render_dataset_section() -> pd.DataFrame | None:
     return active
 
 
+def _render_descriptive_stats(active: pd.DataFrame | None) -> None:
+    st.markdown("### Fase 2 · Estadística descriptiva")
+    st.caption(
+        "Solo indicadores esenciales (no todos los cálculos posibles): "
+        "tamaño, clase objetivo y resumen de variables clave."
+    )
+    if active is None or active.empty:
+        st.info("Cargue datos en la Fase 1 para ver la descriptiva.")
+        return
+
+    n = len(active)
+    pos = int(active[TARGET_COLUMN].sum())
+    neg = n - pos
+    rate = float(active[TARGET_COLUMN].mean())
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("N (patrones)", f"{n:,}")
+    m2.metric("Clase 1 (enfermedad)", f"{pos:,}")
+    m3.metric("Clase 0", f"{neg:,}")
+    m4.metric("% positivos", f"{rate:.1%}")
+
+    # Resumen corto: no dump de describe() completo.
+    focus = [
+        "BMI",
+        "AgeCategory",
+        "GeneralHealth",
+        "SleepHours",
+        "PhysicalHealthDays",
+        "MentalHealthDays",
+    ]
+    rows = []
+    for col in focus:
+        if col not in active.columns:
+            continue
+        s = pd.to_numeric(active[col], errors="coerce")
+        rows.append(
+            {
+                "Variable": FEATURE_LABELS_ES.get(col, col),
+                "Media": round(float(s.mean()), 3),
+                "Mediana": round(float(s.median()), 3),
+                "Desv. est.": round(float(s.std(ddof=1)), 3) if len(s) > 1 else 0.0,
+                "Mín": round(float(s.min()), 3),
+                "Máx": round(float(s.max()), 3),
+            }
+        )
+    st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+
+    g1, g2 = st.columns(2)
+    with g1:
+        st.caption("Distribución del IMC")
+        fig, ax = plt.subplots(figsize=(4.5, 2.8))
+        ax.hist(active["BMI"].dropna(), bins=30, color="#0b6e4f", alpha=0.85)
+        ax.set_xlabel("IMC")
+        ax.set_ylabel("Frecuencia")
+        fig.tight_layout()
+        st.pyplot(fig, clear_figure=True)
+        plt.close(fig)
+    with g2:
+        st.caption("Balance de la clase objetivo")
+        fig, ax = plt.subplots(figsize=(4.5, 2.8))
+        ax.bar(["Sin ECV (0)", "Con ECV (1)"], [neg, pos], color=["#64748b", "#b91c1c"])
+        ax.set_ylabel("Patrones")
+        fig.tight_layout()
+        st.pyplot(fig, clear_figure=True)
+        plt.close(fig)
+
+
 def _render_split_and_params() -> dict:
-    st.markdown("#### 2. Partición e hiperparámetros (logística)")
+    st.markdown("### Fase 3 · Preparación (partición e hiperparámetros)")
     settings = load_admin_settings()
     train_pct = st.number_input(
         "% entrenamiento",
@@ -234,10 +489,13 @@ def _render_split_and_params() -> dict:
 
 
 def _render_train(active: pd.DataFrame | None, params: dict) -> None:
-    st.markdown("#### 3. Reentrenar regresión logística")
-    disabled = active is None or not params["split_ok"]
-    if active is None:
-        st.warning("Active un dataset válido antes de entrenar.")
+    st.markdown("### Fase 4 · Entrenamiento (regresión logística)")
+    ready, ready_msg = _dataset_train_ready(active)
+    disabled = (not ready) or (not params["split_ok"])
+    if not ready:
+        st.warning(ready_msg)
+    elif not params["split_ok"]:
+        st.warning("Ajuste la partición en la Fase 3 (debe sumar 100%).")
     if st.button(
         "Entrenar ahora",
         type="primary",
@@ -476,8 +734,39 @@ def _plot_calibration(report: dict):
     return fig
 
 
+def _render_generalization(report: dict | None) -> None:
+    """Fase de generalización: desempeño en hold-out (test)."""
+    st.markdown("### Fase 6 · Generalización (conjunto de prueba)")
+    st.caption(
+        "Evalúa si el modelo generaliza: métricas solo sobre test "
+        "(no usado para ajustar C)."
+    )
+    if not report:
+        st.info("Entrene en la Fase 4 para ver la generalización.")
+        return
+    metrics = report.get("metrics") or {}
+    data = report.get("data") or {}
+    a, b, c, d = st.columns(4)
+    a.metric("AUC test", f"{metrics.get('auc_test', float('nan')):.3f}")
+    b.metric("AUC-PR test", f"{metrics.get('auc_pr_test', float('nan')):.3f}")
+    c.metric(
+        "Sensibilidad (tamizaje)",
+        f"{metrics.get('sensitivity_screening', float('nan')):.3f}",
+    )
+    d.metric(
+        "Especificidad (tamizaje)",
+        f"{metrics.get('specificity_screening', float('nan')):.3f}",
+    )
+    st.caption(
+        f"Filas test: {data.get('test_rows', '—')} · "
+        f"AUC train {metrics.get('auc_train', float('nan')):.3f} vs "
+        f"AUC val {metrics.get('auc_val', float('nan')):.3f} "
+        "(si train ≫ test, hay sobreajuste)."
+    )
+
+
 def _render_dashboard() -> None:
-    st.markdown("#### 4. Consola de entrenamiento (estilo MATLAB, logística)")
+    st.markdown("### Fase 5 · Evaluación (consola de entrenamiento)")
     report = st.session_state.get("last_training_run") or load_training_run()
     if not report:
         st.info("Aún no hay corridas registradas en `reports/training_run.json`.")
@@ -639,22 +928,29 @@ def _render_dashboard() -> None:
 
 
 def render_admin_panel() -> None:
-    """UI completa del administrador (solo logística)."""
+    """UI Admin: fases hasta generalización (carga → … → test)."""
     ensure_seed_active_dataset()
 
     st.markdown("## Panel administrador")
     st.caption(
-        "Datos externos · partición · reentrenamiento logístico · dashboard. "
+        "Primer ambiente: fases de IA hasta **generalización** "
+        "(carga → descriptiva → preparación → entrenamiento → evaluación → test). "
         "Use ☰ para apariencia, volver a cliente o cerrar sesión."
     )
 
     with st.expander("Cambiar usuario / contraseña", expanded=False):
         _render_password_section()
+
     st.divider()
     active = _render_dataset_section()
+    st.divider()
+    _render_descriptive_stats(active)
     st.divider()
     params = _render_split_and_params()
     st.divider()
     _render_train(active, params)
     st.divider()
     _render_dashboard()
+    st.divider()
+    report = st.session_state.get("last_training_run") or load_training_run()
+    _render_generalization(report)
