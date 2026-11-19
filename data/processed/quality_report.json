@@ -3,15 +3,15 @@
   "positive_rate": 0.09438507693056435,
   "split": {
     "train": 0.7,
-    "val": 0.15,
-    "test": 0.15
+    "val": 0.1,
+    "test": 0.2
   },
   "train_rows": 201363,
-  "val_rows": 43149,
-  "test_rows": 43150,
+  "val_rows": 28766,
+  "test_rows": 57533,
   "train_positive_rate": 0.09438675426965232,
-  "val_positive_rate": 0.09437066907691952,
-  "test_positive_rate": 0.09439165701042873,
+  "val_positive_rate": 0.09438225683098102,
+  "test_positive_rate": 0.0943806163419255,
   "features": [
     "AgeCategory",
     "Sex",

@@ -1,9 +1,9 @@
 {
   "train_pct": 70,
-  "val_pct": 15,
-  "test_pct": 15,
+  "val_pct": 10,
+  "test_pct": 20,
   "tune_C": true,
   "C": 0.001,
   "class_weight": "balanced",
-  "n_iter_search": 12
+  "n_iter_search": 10
 }
