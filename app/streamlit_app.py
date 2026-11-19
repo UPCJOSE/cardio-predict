@@ -19,6 +19,9 @@ sys.path.insert(0, str(ROOT))
 
 from src.config import FEATURE_COLUMNS, MODELS_DIR, REPORTS_DIR  # noqa: E402
 
+sys.path.insert(0, str(ROOT / "app"))
+from admin_panel import render_admin_panel, render_login  # noqa: E402
+
 AGE_LABELS = [
     "18-24",
     "25-29",
@@ -176,9 +179,9 @@ html, body, [class*="css"] {
   --cp-menu-btn: #1a8a7a;
   --cp-menu-btn-hover: #23a090;
   --cp-menu-btn-text: #f7fcfb;
-  --cp-secondary-bg: rgba(255,255,255,0.06);
-  --cp-secondary-text: #d7e8ea;
-  --cp-secondary-border: rgba(180, 210, 220, 0.18);
+  --cp-secondary-bg: #1a3038;
+  --cp-secondary-text: #eef6f7;
+  --cp-secondary-border: rgba(180, 210, 220, 0.28);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -207,9 +210,9 @@ html, body, [class*="css"] {
     --cp-menu-btn: #1a8a7a;
     --cp-menu-btn-hover: #23a090;
     --cp-menu-btn-text: #f7fcfb;
-    --cp-secondary-bg: rgba(255,255,255,0.06);
-    --cp-secondary-text: #d7e8ea;
-    --cp-secondary-border: rgba(180, 210, 220, 0.18);
+    --cp-secondary-bg: #1a3038;
+    --cp-secondary-text: #eef6f7;
+    --cp-secondary-border: rgba(180, 210, 220, 0.28);
   }
 }
 
@@ -344,44 +347,134 @@ div[data-testid="stForm"] {
   padding: 0.85rem 1rem 0.4rem;
 }
 
+.stButton > button,
+.stDownloadButton > button,
+button[data-testid="baseButton-secondary"],
+button[kind="secondary"] {
+  border-radius: 12px !important;
+  background: var(--cp-secondary-bg) !important;
+  color: var(--cp-secondary-text) !important;
+  border: 1px solid var(--cp-secondary-border) !important;
+  font-weight: 600 !important;
+}
 .stButton > button[kind="primary"],
-div[data-testid="stFormSubmitButton"] button {
+.stDownloadButton > button[kind="primary"],
+div[data-testid="stFormSubmitButton"] button,
+button[data-testid="baseButton-primary"],
+button[kind="primary"] {
   background: #136f63 !important;
   border: none !important;
-  color: white !important;
+  color: #ffffff !important;
   font-weight: 600 !important;
   border-radius: 12px !important;
   padding: 0.55rem 1rem !important;
 }
-.stButton > button {
-  border-radius: 12px !important;
+.stButton > button[kind="primary"] span,
+.stButton > button[kind="primary"] p,
+div[data-testid="stFormSubmitButton"] button span,
+button[kind="primary"] span {
+  color: #ffffff !important;
 }
-.stButton > button[kind="secondary"] {
-  background: var(--cp-secondary-bg) !important;
+.stButton > button[kind="secondary"] span,
+.stButton > button[kind="secondary"] p,
+.stDownloadButton > button span,
+button[kind="secondary"] span {
   color: var(--cp-secondary-text) !important;
-  border: 1px solid var(--cp-secondary-border) !important;
 }
 
 .stApp:has(.theme-dark) [data-testid="stMarkdownContainer"],
 .stApp:has(.theme-dark) label,
-.stApp:has(.theme-dark) p,
-.stApp:has(.theme-dark) span {
+.stApp:has(.theme-dark) p {
   color: var(--cp-text);
+}
+.stApp:has(.theme-dark) [data-testid="stMarkdownContainer"] span {
+  color: inherit;
 }
 @media (prefers-color-scheme: dark) {
   .stApp:has(.theme-system) [data-testid="stMarkdownContainer"],
   .stApp:has(.theme-system) label,
-  .stApp:has(.theme-system) p,
-  .stApp:has(.theme-system) span {
+  .stApp:has(.theme-system) p {
     color: var(--cp-text);
   }
+}
+
+/* Barra lateral = mismo fondo del app (claro/oscuro/sistema). */
+section[data-testid="stSidebar"] {
+  position: fixed !important;
+  z-index: 1000001 !important;
+  top: 0 !important;
+  left: 0 !important;
+  height: 100vh !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  background: var(--cp-panel) !important;
+  border-right: 1px solid var(--cp-panel-border) !important;
+  transition: width 0.2s ease, min-width 0.2s ease, max-width 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.stApp:has(.menu-closed) section[data-testid="stSidebar"] {
+  width: 4.6rem !important;
+  min-width: 4.6rem !important;
+  max-width: 4.6rem !important;
+  box-shadow: 2px 0 14px rgba(20, 40, 60, 0.08) !important;
+  overflow: visible !important;
+}
+.stApp:has(.menu-open) section[data-testid="stSidebar"] {
+  width: 21rem !important;
+  min-width: 21rem !important;
+  max-width: 22rem !important;
+  box-shadow: 14px 0 40px rgba(0, 0, 0, 0.18) !important;
+  overflow: auto !important;
+}
+.stApp:has(.menu-open)::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  left: 21rem;
+  background: rgba(8, 20, 28, 0.35);
+  z-index: 1000000;
+}
+section.main, [data-testid="stAppViewContainer"] > .main {
+  margin-left: 4.6rem !important;
+}
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"] {
+  display: none !important;
+}
+.stApp:has(.menu-closed) [data-testid="stSidebarContent"] {
+  padding: 1rem 0.85rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+.stApp:has(.menu-open) [data-testid="stSidebarContent"] {
+  padding: 0.95rem 1rem !important;
+}
+
+/* Mismo botón hamburguesa dentro y fuera (abrir/cerrar). */
+.stApp:has(.menu-closed) section[data-testid="stSidebar"] [data-testid="stButton"] > button,
+.stApp:has(.menu-open) section[data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:first-of-type > div:last-child [data-testid="stButton"] > button {
+  width: 2.75rem !important;
+  min-width: 2.75rem !important;
+  max-width: 2.75rem !important;
+  height: 2.75rem !important;
+  padding: 0 !important;
+  border-radius: 12px !important;
+  background: var(--cp-menu-btn) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--cp-panel-border) !important;
+  box-shadow: 0 8px 18px rgba(11, 61, 74, 0.18) !important;
+  font-size: 1.15rem !important;
+  font-weight: 700 !important;
+}
+.stApp:has(.menu-closed) section[data-testid="stSidebar"] [data-testid="stButton"] > button span,
+.stApp:has(.menu-open) section[data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:first-of-type > div:last-child [data-testid="stButton"] > button span {
+  color: #ffffff !important;
 }
 
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header[data-testid="stHeader"] {display: none !important;}
-section[data-testid="stSidebar"] {display: none !important;}
-[data-testid="collapsedControl"] {display: none !important;}
 [data-testid="stDecoration"] {display: none;}
 [data-testid="stStatusWidget"] {display: none;}
 .stAppDeployButton, .stDeployButton {display: none !important;}
@@ -470,20 +563,33 @@ def init_form_state(default_model: str | None = None) -> None:
     for key, value in PRESET_DEFAULT.items():
         if key not in st.session_state:
             st.session_state[key] = value
-    if "theme_mode" not in st.session_state:
-        st.session_state["theme_mode"] = "Claro"
+    # theme_preference NO es key de widget: sobrevive al cambiar Cliente ↔ Admin.
+    if "theme_preference" not in st.session_state:
+        legacy = st.session_state.get("theme_mode", "Claro")
+        st.session_state["theme_preference"] = (
+            legacy if legacy in THEME_OPTIONS else "Claro"
+        )
     if "sidebar_open" not in st.session_state:
-        st.session_state["sidebar_open"] = True
+        st.session_state["sidebar_open"] = False
+    if "app_role" not in st.session_state:
+        st.session_state["app_role"] = "cliente"
+    if "admin_authenticated" not in st.session_state:
+        st.session_state["admin_authenticated"] = False
     if default_model and "model_choice" not in st.session_state:
         st.session_state["model_choice"] = default_model
 
 
 def apply_preset(preset: dict, preset_name: str) -> None:
-    """Carga un caso de demo y calcula el resultado al instante."""
+    """Carga un perfil de ejemplo y calcula el resultado al instante."""
     for key, value in preset.items():
         st.session_state[key] = value
     st.session_state["last_row"] = form_to_row(preset)
     st.session_state["active_preset"] = preset_name
+
+
+def current_theme() -> str:
+    theme = st.session_state.get("theme_preference", "Claro")
+    return theme if theme in THEME_OPTIONS else "Claro"
 
 
 def theme_class(theme_mode: str) -> str:
@@ -492,18 +598,48 @@ def theme_class(theme_mode: str) -> str:
     return mapping.get(theme_mode, "theme-light")
 
 
-def apply_theme(theme_mode: str) -> None:
-    """Inyecta CSS base + marcador de tema para variables y modo sistema."""
+def apply_theme(theme_mode: str | None = None) -> None:
+    """Inyecta CSS base + marcadores de tema y estado del menú overlay."""
+    theme_mode = theme_mode or current_theme()
+    menu_open = bool(st.session_state.get("sidebar_open", False))
+    menu_cls = "menu-open" if menu_open else "menu-closed"
     st.markdown(CSS, unsafe_allow_html=True)
     st.markdown(
-        f'<div class="{theme_class(theme_mode)}" style="display:none"></div>',
+        f'<div class="{theme_class(theme_mode)} {menu_cls}" style="display:none"></div>',
         unsafe_allow_html=True,
     )
 
 
 def toggle_sidebar() -> None:
-    """Abre o cierra la barra lateral de presentación."""
-    st.session_state["sidebar_open"] = not st.session_state.get("sidebar_open", True)
+    """Abre o cierra el menú lateral superpuesto."""
+    st.session_state["sidebar_open"] = not st.session_state.get("sidebar_open", False)
+
+
+def render_theme_picker(widget_key: str) -> None:
+    """Selector de apariencia; guarda en theme_preference (no se borra al cambiar de vista)."""
+    current = current_theme()
+    choice = st.radio(
+        "Apariencia",
+        THEME_OPTIONS,
+        index=THEME_OPTIONS.index(current),
+        key=widget_key,
+        horizontal=True,
+        help="Claro, Oscuro o según el sistema. Se conserva en toda la aplicación.",
+    )
+    if choice != current:
+        st.session_state["theme_preference"] = choice
+        st.rerun()
+
+
+def render_hamburger(key: str, *, open_menu: bool) -> None:
+    """Mismo botón ☰ para abrir y cerrar."""
+    st.button(
+        "☰",
+        key=key,
+        help="Cerrar menú" if open_menu else "Abrir menú",
+        on_click=toggle_sidebar,
+        type="primary",
+    )
 
 
 def render_hero() -> None:
@@ -513,7 +649,7 @@ def render_hero() -> None:
   <h1>Cardio Predict</h1>
   <p>
     Estimación orientativa de riesgo cardiovascular a partir de 14 variables de encuesta,
-    comparando regresión logística y XGBoost.
+    con un modelo de regresión logística.
   </p>
   <div class="hero-note">
     Herramienta educativa de apoyo. No sustituye valoración médica ni diagnóstico.
@@ -524,46 +660,86 @@ def render_hero() -> None:
     )
 
 
-def render_sidebar_controls(
+def render_client_menu(
     names: list[str],
     metrics: dict,
     selected: str,
     reason: str,
 ) -> tuple[str, float, float]:
-    """Controles de presentación dentro de la barra lateral."""
-    st.markdown(
-        '<div class="cp-side-title">Presentación</div>'
-        '<div class="cp-side-caption">Tema, modelo y datos de la demo en vivo.</div>',
-        unsafe_allow_html=True,
-    )
-    st.radio(
-        "Apariencia",
-        THEME_OPTIONS,
-        key="theme_mode",
-        horizontal=True,
-        help="Claro, Oscuro o según el sistema (como en Deploy).",
-    )
-    st.markdown("**Modelo para esta estimación**")
-    model_name = st.radio(
-        "Modelo",
-        names,
-        key="model_choice",
-        label_visibility="collapsed",
-        help="Por defecto se usa el modelo seleccionado en la evaluación.",
-    )
+    """Barra verde + menú cliente (contenido solo si está abierto)."""
+    open_menu = bool(st.session_state.get("sidebar_open"))
+    model_name = "Regresión logística" if "Regresión logística" in names else names[0]
+    st.session_state["model_choice"] = model_name
     t_screen, t_high = thresholds_for(metrics, model_name)
+
+    if not open_menu:
+        render_hamburger("menu_toggle_client", open_menu=False)
+        return model_name, t_screen, t_high
+
+    try:
+        title_col, btn_col = st.columns([0.78, 0.22], vertical_alignment="top")
+    except TypeError:
+        title_col, btn_col = st.columns([0.78, 0.22])
+    with title_col:
+        st.markdown(
+            '<div class="cp-side-title">Cardio Predict</div>'
+            '<div class="cp-side-caption">Menú · apariencia y acceso</div>',
+            unsafe_allow_html=True,
+        )
+    with btn_col:
+        render_hamburger("menu_toggle_client", open_menu=True)
+
+    render_theme_picker("theme_picker_client")
+    st.caption(f"Modelo en uso: **{model_name}**")
     model_metrics = metrics.get("models", {}).get(model_name, {})
     if model_metrics:
         st.metric("AUC-ROC (prueba)", f"{model_metrics['auc_roc']:.3f}")
         st.caption(f"Umbral de tamizaje {t_screen:.2f} · umbral alto {t_high:.2f}")
     with st.expander("¿Por qué este modelo?", expanded=False):
-        st.write(f"**Operativo del proyecto:** {selected}")
+        st.write(f"**Modelo operativo:** {selected}")
         if reason:
             st.write(reason)
         st.caption(
-            "Partición actual del experimento: 70 % train / 15 % val / 15 % test."
+            "El administrador puede reentrenar la logística con una base de datos externa."
         )
+    st.divider()
+    if st.button("Administrador", use_container_width=True, key="go_admin"):
+        st.session_state["app_role"] = "admin"
+        st.session_state["sidebar_open"] = False
+        st.rerun()
     return model_name, t_screen, t_high
+
+
+def render_admin_menu() -> None:
+    """Barra verde + menú administrador."""
+    open_menu = bool(st.session_state.get("sidebar_open"))
+    if not open_menu:
+        render_hamburger("menu_toggle_admin", open_menu=False)
+        return
+
+    try:
+        title_col, btn_col = st.columns([0.78, 0.22], vertical_alignment="top")
+    except TypeError:
+        title_col, btn_col = st.columns([0.78, 0.22])
+    with title_col:
+        st.markdown(
+            '<div class="cp-side-title">Cardio Predict</div>'
+            '<div class="cp-side-caption">Administrador · apariencia y sesión</div>',
+            unsafe_allow_html=True,
+        )
+    with btn_col:
+        render_hamburger("menu_toggle_admin", open_menu=True)
+    render_theme_picker("theme_picker_admin")
+    st.divider()
+    if st.button("Ir a vista cliente", use_container_width=True, key="go_client"):
+        st.session_state["app_role"] = "cliente"
+        st.session_state["sidebar_open"] = False
+        st.rerun()
+    if st.button("Cerrar sesión admin", use_container_width=True, key="logout_admin"):
+        st.session_state["admin_authenticated"] = False
+        st.session_state["app_role"] = "cliente"
+        st.session_state["sidebar_open"] = False
+        st.rerun()
 
 
 def render_estimator(
@@ -580,7 +756,7 @@ def render_estimator(
             """
 <div class="panel">
   <h3>Perfil de la persona</h3>
-  <div class="muted">Complete las 14 variables o use un caso de demostración.</div>
+  <div class="muted">Complete las 14 variables o use un perfil de ejemplo.</div>
 </div>
             """,
             unsafe_allow_html=True,
@@ -623,11 +799,12 @@ def render_estimator(
                 st.selectbox("Edad", AGE_LABELS, key="age")
                 st.selectbox("Sexo", ["Mujer", "Hombre"], key="sex")
                 st.number_input(
-                    "IMC",
+                    "IMC (kg/m²)",
                     min_value=12.0,
                     max_value=60.0,
                     step=0.1,
                     key="bmi",
+                    help="Índice de masa corporal = peso (kg) ÷ estatura² (m).",
                 )
             with c2:
                 st.selectbox("Salud general percibida", HEALTH_LABELS, key="health")
@@ -685,7 +862,7 @@ def render_estimator(
             """
 <div class="panel">
   <h3>Resultado</h3>
-  <div class="muted">Se actualiza al estimar o al cargar un caso de demo.</div>
+  <div class="muted">Se actualiza al estimar el riesgo o al cargar un perfil de ejemplo.</div>
 </div>
             """,
             unsafe_allow_html=True,
@@ -694,8 +871,8 @@ def render_estimator(
         row = st.session_state.get("last_row")
         if row is None:
             st.info(
-                "Pulse **Estimar riesgo** o cargue un **caso de demostración** "
-                "para ver el nivel Bajo / Moderado / Alto."
+                "Pulse **Estimar riesgo** o elija un **perfil de ejemplo** "
+                "(bajo, típico o alto) para ver el nivel Bajo / Moderado / Alto."
             )
             return
 
@@ -758,8 +935,31 @@ def render_result(level: str, prob: float, advice: str, model_name: str) -> None
     st.progress(min(max(prob, 0.0), 1.0))
 
 
+def render_client(models: dict, metrics: dict, selected: str, reason: str) -> None:
+    """Vista cliente: estimación con logística y menú overlay."""
+    names = list(models.keys())
+    if not names:
+        st.error("No hay modelos cargados.")
+        return
+    if "Regresión logística" in names:
+        st.session_state["model_choice"] = "Regresión logística"
+    elif (
+        "model_choice" not in st.session_state
+        or st.session_state["model_choice"] not in names
+    ):
+        st.session_state["model_choice"] = names[0]
+
+    with st.sidebar:
+        model_name, t_screen, t_high = render_client_menu(
+            names, metrics, selected, reason
+        )
+
+    render_hero()
+    render_estimator(models[model_name], model_name, t_screen, t_high)
+
+
 def main():
-    """Pantalla: formulario → predict_proba → Bajo / Moderado / Alto."""
+    """Enruta vista Cliente (estimación) o Admin (datos + reentrenamiento)."""
     st.set_page_config(
         page_title="Cardio Predict · UPC",
         page_icon="❤",
@@ -767,57 +967,40 @@ def main():
         initial_sidebar_state="collapsed",
     )
     init_form_state()
-    apply_theme(st.session_state["theme_mode"])
+    apply_theme()
+
+    role = st.session_state.get("app_role", "cliente")
+    if role == "admin":
+        if not render_login():
+            if st.button("Volver a cliente"):
+                st.session_state["app_role"] = "cliente"
+                st.rerun()
+            return
+        with st.sidebar:
+            render_admin_menu()
+        render_admin_panel()
+        return
 
     models, metrics, selected, load_errors = load_artifacts()
     if not models:
         st.error("No hay modelos entrenados. Ejecute: `python scripts/run_pipeline.py`")
         for name, err in load_errors.items():
             st.caption(f"{name}: {err}")
+        st.info("Si es administrador, entre al panel para cargar datos y reentrenar.")
+        if st.button("Ir a Administrador"):
+            st.session_state["app_role"] = "admin"
+            st.rerun()
         return
     if load_errors:
         missing = ", ".join(load_errors)
         st.warning(
-            f"No se pudo cargar: {missing}. La demo sigue con el modelo disponible."
+            f"No se pudo cargar: {missing}. La app sigue con el modelo disponible."
         )
 
     reason = metrics.get("selection", {}).get("reason", "")
-    names = list(models.keys())
-    if selected not in names:
-        selected = names[0]
-    if "model_choice" not in st.session_state or st.session_state["model_choice"] not in names:
-        st.session_state["model_choice"] = selected
-
-    sidebar_open = st.session_state.get("sidebar_open", True)
-
-    if sidebar_open:
-        side, main_col = st.columns([0.24, 0.76], gap="large")
-        with side:
-            st.button(
-                "☰",
-                key="sidebar_toggle_open",
-                help="Ocultar barra lateral",
-                on_click=toggle_sidebar,
-            )
-            model_name, t_screen, t_high = render_sidebar_controls(
-                names, metrics, selected, reason
-            )
-        with main_col:
-            render_hero()
-            render_estimator(models[model_name], model_name, t_screen, t_high)
-    else:
-        toggle_col, _ = st.columns([0.06, 0.94])
-        with toggle_col:
-            st.button(
-                "☰",
-                key="sidebar_toggle_closed",
-                help="Mostrar barra lateral",
-                on_click=toggle_sidebar,
-            )
-        model_name = st.session_state["model_choice"]
-        t_screen, t_high = thresholds_for(metrics, model_name)
-        render_hero()
-        render_estimator(models[model_name], model_name, t_screen, t_high)
+    if selected not in models:
+        selected = next(iter(models))
+    render_client(models, metrics, selected, reason)
 
 
 if __name__ == "__main__":

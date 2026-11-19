@@ -5,19 +5,112 @@
     "val": 0.15,
     "test": 0.15
   },
-  "n_iter_search": 15,
+  "n_iter_search": 12,
   "class_balance_train": {
     "neg": 182357,
     "pos": 19006
   },
   "logistic": {
+    "tuned": true,
     "best_params": {
       "clf__C": 0.001
     },
-    "best_val_auc": 0.8337310314183476,
+    "best_val_auc_search": 0.8337310314183476,
+    "n_iter_search": 12,
+    "search_curve": [
+      {
+        "iteration": 1,
+        "C": 0.001,
+        "val_auc": 0.8337310314183476,
+        "classification_error": 0.1662689685816524,
+        "min_classification_error": 0.1662689685816524
+      },
+      {
+        "iteration": 2,
+        "C": 29.763514416313193,
+        "val_auc": 0.8336603056088999,
+        "classification_error": 0.16633969439110008,
+        "min_classification_error": 0.1662689685816524
+      },
+      {
+        "iteration": 3,
+        "C": 8.858667904100823,
+        "val_auc": 0.8336602804708833,
+        "classification_error": 0.16633971952911675,
+        "min_classification_error": 0.1662689685816524
+      },
+      {
+        "iteration": 4,
+        "C": 0.0018329807108324356,
+        "val_auc": 0.833711486610512,
+        "classification_error": 0.16628851338948802,
+        "min_classification_error": 0.1662689685816524
+      },
+      {
+        "iteration": 5,
+        "C": 0.12742749857031335,
+        "val_auc": 0.833661399112618,
+        "classification_error": 0.16633860088738195,
+        "min_classification_error": 0.1662689685816524
+      },
+      {
+        "iteration": 6,
+        "C": 0.02069138081114789,
+        "val_auc": 0.8336661187752176,
+        "classification_error": 0.16633388122478243,
+        "min_classification_error": 0.1662689685816524
+      },
+      {
+        "iteration": 7,
+        "C": 0.7847599703514607,
+        "val_auc": 0.8336603747384451,
+        "classification_error": 0.16633962526155488,
+        "min_classification_error": 0.1662689685816524
+      },
+      {
+        "iteration": 8,
+        "C": 0.006158482110660267,
+        "val_auc": 0.8336759414551683,
+        "classification_error": 0.16632405854483168,
+        "min_classification_error": 0.1662689685816524
+      },
+      {
+        "iteration": 9,
+        "C": 54.555947811685144,
+        "val_auc": 0.8336602993243957,
+        "classification_error": 0.16633970067560433,
+        "min_classification_error": 0.1662689685816524
+      },
+      {
+        "iteration": 10,
+        "C": 16.23776739188721,
+        "val_auc": 0.833660311893404,
+        "classification_error": 0.16633968810659605,
+        "min_classification_error": 0.1662689685816524
+      },
+      {
+        "iteration": 11,
+        "C": 2.636650898730358,
+        "val_auc": 0.8336604312989824,
+        "classification_error": 0.16633956870101763,
+        "min_classification_error": 0.1662689685816524
+      },
+      {
+        "iteration": 12,
+        "C": 0.003359818286283781,
+        "val_auc": 0.8336889001026787,
+        "classification_error": 0.1663110998973213,
+        "min_classification_error": 0.1662689685816524
+      }
+    ],
+    "min_observed_classification_error": 0.1662689685816524,
     "train_auc": 0.8302573219140379,
-    "val_auc": 0.8337310314183476
+    "val_auc": 0.8337310314183476,
+    "test_auc": 0.8322714385488607,
+    "class_weight": "balanced"
   },
+  "source": "admin_retrain_logistic",
+  "updated_at": "2026-11-19T02:58:26.800334+00:00",
   "xgboost": {
     "best_params": {
       "subsample": 0.7,

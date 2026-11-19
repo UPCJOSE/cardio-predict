@@ -11,7 +11,10 @@ data/raw/*.zip
 data/raw/cdc/
 data/processed/*.parquet
 data/processed/*.csv
+data/processed/active_dataset.json
 .streamlit/secrets.toml
+models/admin_credentials.json
+reports/training_run.json
 *.egg-info/
 dist/
 build/

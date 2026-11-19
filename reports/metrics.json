@@ -83,6 +83,6 @@
   },
   "selection": {
     "model": "Regresi\u00f3n log\u00edstica",
-    "reason": "Diferencia de AUC-ROC < 0.01; se prefiere la log\u00edstica por interpretabilidad."
+    "reason": "Reentrenamiento Admin (solo log\u00edstica)."
   }
 }

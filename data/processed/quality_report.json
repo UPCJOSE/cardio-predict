@@ -1,10 +1,17 @@
 {
-  "rows_raw": 319795,
-  "duplicates_removed": 32133,
   "rows_final": 287662,
   "positive_rate": 0.09438507693056435,
-  "bmi_clip_p01": 17.74,
-  "bmi_clip_p99": 49.23,
+  "split": {
+    "train": 0.7,
+    "val": 0.15,
+    "test": 0.15
+  },
+  "train_rows": 201363,
+  "val_rows": 43149,
+  "test_rows": 43150,
+  "train_positive_rate": 0.09438675426965232,
+  "val_positive_rate": 0.09437066907691952,
+  "test_positive_rate": 0.09439165701042873,
   "features": [
     "AgeCategory",
     "Sex",
@@ -20,16 +27,5 @@
     "HadStroke",
     "HadKidneyDisease",
     "DifficultyWalking"
-  ],
-  "split": {
-    "train": 0.7,
-    "val": 0.15,
-    "test": 0.15
-  },
-  "train_rows": 201363,
-  "val_rows": 43149,
-  "test_rows": 43150,
-  "train_positive_rate": 0.09438675426965232,
-  "val_positive_rate": 0.09437066907691952,
-  "test_positive_rate": 0.09439165701042873
+  ]
 }

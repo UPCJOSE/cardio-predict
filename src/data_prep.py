@@ -100,6 +100,9 @@ def clean_and_engineer(df: pd.DataFrame):
 
 def split_data(
     df: pd.DataFrame,
+    train_size: float = TRAIN_SIZE,
+    val_size: float = VAL_SIZE,
+    test_size: float = TEST_SIZE,
 ) -> tuple[
     pd.DataFrame,
     pd.DataFrame,
@@ -108,21 +111,23 @@ def split_data(
     pd.Series,
     pd.Series,
 ]:
-    """70/15/15 estratificado por HeartDisease (misma proporción de positivos)."""
-    if abs(TRAIN_SIZE + VAL_SIZE + TEST_SIZE - 1.0) > 1e-9:
-        raise ValueError("TRAIN_SIZE + VAL_SIZE + TEST_SIZE debe sumar 1.0")
+    """Partición estratificada por HeartDisease (por defecto 70/15/15)."""
+    if abs(train_size + val_size + test_size - 1.0) > 1e-9:
+        raise ValueError("train_size + val_size + test_size debe sumar 1.0")
+    if min(train_size, val_size, test_size) <= 0:
+        raise ValueError("Cada partición debe ser > 0")
 
     X = df[FEATURE_COLUMNS]
     y = df[TARGET_COLUMN]
     X_train, X_temp, y_train, y_temp = train_test_split(
         X,
         y,
-        test_size=(1.0 - TRAIN_SIZE),
+        test_size=(1.0 - train_size),
         random_state=RANDOM_STATE,
         stratify=y,
     )
-    # Del 30 % restante: mitad val, mitad test → 15 % / 15 % del total.
-    relative_test = TEST_SIZE / (VAL_SIZE + TEST_SIZE)
+    # Del resto: val/test en proporción relativa a val_size y test_size.
+    relative_test = test_size / (val_size + test_size)
     X_val, X_test, y_val, y_test = train_test_split(
         X_temp,
         y_temp,

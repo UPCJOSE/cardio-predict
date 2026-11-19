@@ -12,6 +12,17 @@ MODELS_DIR = ROOT / "models"
 REPORTS_DIR = ROOT / "reports"
 FIGURES_DIR = REPORTS_DIR / "figures"
 
+# Dataset activo para reentrenar desde el panel Admin (Fase A).
+ACTIVE_DATASET_PARQUET = DATA_PROCESSED / "active_dataset.parquet"
+ACTIVE_DATASET_JSON = DATA_PROCESSED / "active_dataset.json"
+TRAINING_RUN_JSON = REPORTS_DIR / "training_run.json"
+ADMIN_SETTINGS_JSON = MODELS_DIR / "admin_settings.json"
+ADMIN_CREDENTIALS_JSON = MODELS_DIR / "admin_credentials.json"
+
+# Credenciales iniciales de aula (se copian a admin_credentials.json la primera vez).
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "upc-cardio"
+
 # CSV público BRFSS cleaned (espejo sin login de Kaggle).
 RAW_CSV = DATA_RAW / "heart_2020_cleaned.csv"
 RAW_URL = (
